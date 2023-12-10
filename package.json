@@ -1,0 +1,32 @@
+{
+  "type": "commonjs",
+  "author": {
+    "email": "murithiedwin@gmail.com",
+    "name": "Edwin Murithi",
+    "url": "https://linkedin/in/murithiedwin"
+  },
+  "licenses": [
+    {
+      "type": "UNLICENSED"
+    }
+  ],
+  "displayName": "OGC Features 1.1 TypeScript-Based Server",
+  "version": "5.0.0",
+  "scripts": {
+    "dev": "nodemon - exec npx ts-node src/server.ts"
+  },
+  "dependencies": {
+    "@types/node": "^20.10.4",
+    "connect": "^3.7.0",
+    "dotenv": "^16.3.1",
+    "exegesis-express": "^4.0.0",
+    "morgan": "^1.10.0",
+    "nodemon": "^3.0.2",
+    "ogr2ogr": "^4.0.1",
+    "pg": "^8.11.3",
+    "pg-hstore": "^2.3.4",
+    "query-string": "^8.1.0",
+    "sequelize": "^6.35.1",
+    "sequelize-typescript": "^2.1.6"
+  }
+}

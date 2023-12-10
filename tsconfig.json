@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "allowUnreachableCode": false,
+        "allowJs": true,
+        "target":"ES6",
+        "pretty": true,
+        "outDir": "outDir",
+        "module": "CommonJS",
+        "types": ["node"],
+        "typeRoots": ["../node_modules/@types"]
+    }
+}

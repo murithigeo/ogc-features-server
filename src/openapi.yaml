@@ -1,0 +1,2220 @@
+openapi: 3.1.0
+info:
+  version: 1.0.1a.Demo
+  title: Dashboard Backend Demo
+  contact:
+    name: Edwin Murithi
+    email: murithiedwing@gmail.com
+paths:
+  /:
+    x-exegesis-controller: landingpageController
+    description: Landing Page Document
+    get:
+      x-exegesis-operationId: getLandingPage
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/landingpage'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /conformance:
+    x-exegesis-controller: conformanceController
+    description: Describes the conformance classes implemented by the server
+    get:
+      x-exegesis-operationId: getConformance
+      parameters:
+        - $ref: '#/components/parameters/core-query-f'
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/conformance'
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /api:
+    x-exegesis-controller: serviceDescController
+    description: Displays this YAML file as JSON
+    get:
+      x-exegesis-operationId: getServiceDesc
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/vnd.oai.openapi+json;version=3.0:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /api.html:
+    x-exegesis-controller: serviceDocController
+    description: Access the Docs
+    get:
+      x-exegesis-operationId: getServiceDoc
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /collections:
+    x-exegesis-controller: collectionsController
+    description: Return a list of available collections
+    get:
+      x-exegesis-operationId: getAllCollections
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/collections'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /collections/{collectionId}:
+    x-exegesis-controller: collectionsController
+    description: Individual metadata for collections
+    get:
+      x-exegesis-operationId: getOneCollection
+      parameters:
+        - in: path
+          name: collectionId
+          required: true
+          schema:
+            type: string
+            enum:
+              - incidents
+              - goi
+              - conflicts
+              - traveladvisories
+              - coups
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/basicCollection'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /download/{collectionId}.gpkg:
+    x-exegesis-controller: dataExportController
+    description: Download available datasets as a GKPG File
+    get:
+      x-exegesis-operationId: downloadDataset
+      parameters:
+        - in: path
+          name: collectionId
+          required: true
+          schema:
+            type: string
+            enum:
+              - incidents
+              - goi
+              - conflicts
+              - traveladvisories
+              - coups
+              - all
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/geopackage+sqlite3:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /collections/incidents/items:
+    x-exegesis-controller: incidentsController
+    description: Supported Operations> GET | PUT | POST
+    get:
+      deprecated: false
+      x-exegesis-operationId: getAllIncidents
+      parameters:
+        - $ref: '#/components/parameters/core-query-limit'
+        - $ref: '#/components/parameters/core-query-offset'
+        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/core-query-radius'
+        - $ref: '#/components/parameters/core-query-datetime'
+        - $ref: '#/components/parameters/core-query-bbox'
+        - $ref: '#/components/parameters/all-query-admin0'
+        - $ref: '#/components/parameters/incidents-query-incidentdesc'
+        - $ref: '#/components/parameters/incidents-query-success'
+        - $ref: '#/components/parameters/incidents-query-admin1'
+        - $ref: '#/components/parameters/incidents-query-admin2'
+        - $ref: '#/components/parameters/incidents-query-admin3'
+        - $ref: '#/components/parameters/incidents-query-admin4'
+        - $ref: '#/components/parameters/incidents-query-admin5'
+        - $ref: '#/components/parameters/incidents-query-category'
+        - $ref: '#/components/parameters/incidents-query-locale'
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/Incidents-get-featurecollection'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+        '404':
+          $ref: '#/components/responses/Error404NotFound'
+        '503':
+          $ref: '#/components/responses/Error503ServiceUnavailable'
+    put:
+      deprecated: false
+      x-exegesis-operationId: updateIncidents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Incidents-put-featurecollection'
+      responses:
+        '200':
+          description: Successful Request.
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+        '404':
+          $ref: '#/components/responses/Error404NotFound'
+        '405':
+          $ref: '#/components/responses/Error405MethodNotAllowed'
+        '406':
+          $ref: '#/components/responses/Error406NotAcceptable'
+    post:
+      deprecated: false
+      x-exegesis-operationId: addIncidents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Incidents-post-featurecollection'
+      responses:
+        '200':
+          description: Successful Request.
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /collections/incidents/items/{featureId}:
+    x-exegesis-controller: incidentsController
+    description: Supported Operations>GET,DELETE
+    get:
+      deprecated: false
+      x-exegesis-operationId: getOneIncident
+      parameters:
+        - $ref: '#/components/parameters/incidents-path-featureId'
+        - $ref: '#/components/parameters/core-query-f'
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/Incidents-get-featurecollection'
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+        '404':
+          $ref: '#/components/responses/Error404NotFound'
+        '503':
+          $ref: '#/components/responses/Error503ServiceUnavailable'
+  /collections/conflicts/items:
+    x-exegesis-controller: conflictsController
+    description: Supported Operations > GET | POST | PUT
+    get:
+      x-exegesis-operationId: getAllConflicts
+      parameters:
+        - $ref: '#/components/parameters/core-query-limit'
+        - $ref: '#/components/parameters/core-query-offset'
+        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/core-query-radius'
+        - $ref: '#/components/parameters/core-query-datetime'
+        - $ref: '#/components/parameters/core-query-bbox'
+        - $ref: '#/components/parameters/all-query-admin0'
+        - $ref: '#/components/parameters/conflicts-query-conflictname'
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/Conflicts-get-featurecollection'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+    put:
+      x-exegesis-operationId: updateConflicts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Conflicts-put-featurecollection'
+      responses:
+        '200':
+          description: Successful Request.
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+        '404':
+          $ref: '#/components/responses/Error404NotFound'
+    post:
+      x-exegesis-operationId: addConflicts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Conflicts-post-featurecollection'
+      responses:
+        '200':
+          description: Successful Request.
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /collections/conflicts/items/{featureId}:
+    x-exegesis-controller: conflictsController
+    description: Supported Operations> GET | DELETE
+    get:
+      x-exegesis-operationId: getOneConflict
+      parameters:
+        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/conflicts-path-featureId'
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/Incidents-get-featurecollection'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+        '404':
+          $ref: '#/components/responses/Error404NotFound'
+    delete:
+      x-exegesis-operationId: deleteOneConflict
+      parameters:
+        - $ref: '#/components/parameters/conflicts-path-featureId'
+      responses:
+        '200':
+          description: Deleted Successfully.
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /collections/goi/items:
+    x-exegesis-controller: goiController
+    description: Supported Operations > GET | POST | PUT
+    get:
+      x-exegesis-operationId: getAllGOI
+      parameters:
+        - $ref: '#/components/parameters/core-query-limit'
+        - $ref: '#/components/parameters/core-query-offset'
+        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/core-query-radius'
+        - $ref: '#/components/parameters/core-query-datetime'
+        - $ref: '#/components/parameters/core-query-bbox'
+        - $ref: '#/components/parameters/all-query-admin0'
+        - $ref: '#/components/parameters/goi-query-category'
+        - $ref: '#/components/parameters/goi-query-groupname'
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/Goi-get-featurecollection'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+    put:
+      x-exegesis-operationId: updateGOI
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Goi-put-featurecollection'
+      responses:
+        '200':
+          description: Successful Request.
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+    post:
+      x-exegesis-operationId: addGOI
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Goi-post-featurecollection'
+      responses:
+        '200':
+          description: Successful Request.
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /collections/goi/items/{featureId}:
+    x-exegesis-controller: goiController
+    description: Supported Operations > GET | PUT | POST
+    get:
+      x-exegesis-operationId: getOneGOI
+      parameters:
+        - $ref: '#/components/parameters/goi-path-featureId'
+        - $ref: '#/components/parameters/core-query-f'
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/Goi-get-featurecollection'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+    delete:
+      x-exegesis-operationId: deleteOneGOI
+      parameters:
+        - $ref: '#/components/parameters/goi-path-featureId'
+      responses:
+        '200':
+          description: Successful Deletion.
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /collections/coups/items:
+    x-exegesis-controller: coupsController
+    description: Supported Operations > GET | PUT | POST
+    get:
+      x-exegesis-operationId: getAllCoups
+      parameters:
+        - $ref: '#/components/parameters/core-query-limit'
+        - $ref: '#/components/parameters/core-query-offset'
+        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/core-query-radius'
+        - $ref: '#/components/parameters/core-query-datetime'
+        - $ref: '#/components/parameters/core-query-bbox'
+        - $ref: '#/components/parameters/all-query-admin0'
+        - $ref: '#/components/parameters/coups-query-resolved'
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/Coups-get-featurecollection'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+    put:
+      x-exegesis-operationId: updateCoups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Coups-put-featurecollection'
+      responses:
+        '200':
+          description: Successful Request.
+    post:
+      x-exegesis-operationId: addCoups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Coups-post-featurecollection'
+      responses:
+        '200':
+          description: Successful Request.
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /collections/coups/items/{featureId}:
+    x-exegesis-controller: coupsController
+    get:
+      x-exegesis-operationId: getOneCoup
+      parameters:
+        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/coups-path-featureId'
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/Coups-get-featurecollection'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /collections/traveladvisories/items:
+    x-exegesis-controller: traveladvisoryController
+    description: Supported Operations > GET | PUT | POST
+    get:
+      x-exegesis-operationId: getAllAdvisories
+      parameters:
+        - $ref: '#/components/parameters/core-query-limit'
+        - $ref: '#/components/parameters/core-query-offset'
+        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/core-query-radius'
+        - $ref: '#/components/parameters/core-query-datetime'
+        - $ref: '#/components/parameters/core-query-bbox'
+        - $ref: '#/components/parameters/all-query-admin0'
+        - $ref: '#/components/parameters/traveladvisories-query-xcountry'
+        - $ref: '#/components/parameters/traveladvisories-query-ycountry'
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/TravelAdvisories-get-featurecollection'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+    put:
+      x-exegesis-operationId: updateAdvisories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TravelAdvisories-put-featurecollection'
+      responses:
+        '200':
+          description: Successful Request.
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+    post:
+      x-exegesis-operationId: addAdvisories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TravelAdvisories-post-featurecollection'
+      responses:
+        '200':
+          description: Successful Request.
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /collections/traveladvisories/items/{featureId}:
+    x-exegesis-controller: traveladvisoryController
+    get:
+      x-exegesis-operationId: getOneAdvisory
+      parameters:
+        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/traveladvisories-path-featureId'
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/TravelAdvisories-get-featurecollection'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+components:
+  schemas:
+    GeoJsonObject:
+      description: >
+        GeoJSon object
+
+        The coordinate reference system for all GeoJSON coordinates is a
+        geographic coordinate reference system, using the World Geodetic System
+        1984 (WGS 84) datum, with longitude and latitude units of decimal
+        degrees. This is equivalent to the coordinate reference system
+        identified by the Open Geospatial Consortium (OGC) URN An OPTIONAL
+        third-position element SHALL be the height in meters above or below the
+        WGS 84 reference ellipsoid. In the absence of elevation values,
+        applications sensitive to height or depth SHOULD interpret positions as
+        being at local ground or sea level.
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+            - FeatureCollection
+            - Point
+            - MultiPoint
+            - LineString
+            - MultiLineString
+            - Polygon
+            - MultiPolygon
+            - GeometryCollection
+    Geometry:
+      description: >
+        Abstract type for all GeoJSon object except Feature and
+        FeatureCollection
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3
+      allOf:
+        - $ref: '#/components/schemas/GeoJsonObject'
+        - type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - Point
+                - MultiPoint
+                - LineString
+                - MultiLineString
+                - Polygon
+                - MultiPolygon
+                - GeometryCollection
+          required:
+            - type
+          discriminator:
+            propertyName: type
+    GeometryElement:
+      description: >
+        Abstract type for all GeoJSon 'Geometry' object the type of which is not
+        'GeometryCollection'
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3
+      allOf:
+        - $ref: '#/components/schemas/Geometry'
+        - type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - Point
+                - MultiPoint
+                - LineString
+                - MultiLineString
+                - Polygon
+                - MultiPolygon
+          required:
+            - type
+          discriminator:
+            propertyName: type
+    Feature:
+      description: GeoJSon 'Feature' object
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3.2
+      allOf:
+        - $ref: '#/components/schemas/GeoJsonObject'
+        - type: object
+          required:
+            - geometry
+            - properties
+          properties:
+            geometry:
+              allOf:
+                - nullable: true
+                - $ref: '#/components/schemas/Geometry'
+            properties:
+              type: object
+              nullable: true
+            id:
+              oneOf:
+                - type: number
+                - type: string
+    FeatureCollection:
+      description: GeoJSon 'FeatureCollection' object
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3.3
+      allOf:
+        - $ref: '#/components/schemas/GeoJsonObject'
+        - type: object
+          required:
+            - features
+          properties:
+            features:
+              type: array
+              items:
+                $ref: '#/components/schemas/Feature'
+    Position:
+      description: >
+        GeoJSon fundamental geometry construct.
+
+        A position is an array of numbers. There MUST be two or more elements.
+        The first two elements are longitude and latitude, or easting and
+        northing, precisely in that order and using decimal numbers. Altitude or
+        elevation MAY be included as an optional third element.
+
+        Implementations SHOULD NOT extend positions beyond three elements
+        because the semantics of extra elements are unspecified and ambiguous.
+        Historically, some implementations have used a fourth element to carry a
+        linear referencing measure (sometimes denoted as "M") or a numerical
+        timestamp, but in most situations a parser will not be able to properly
+        interpret these values. The interpretation and meaning of additional
+        elements is beyond the scope of this specification, and additional
+        elements MAY be ignored by parsers.
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3.1.1
+      type: array
+      minItems: 2
+      maxItems: 3
+      items:
+        type: number
+    LineStringCoordinates:
+      description: |
+        GeoJSon fundamental geometry construct, array of two or more positions.
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3.1.4
+      type: array
+      items:
+        $ref: '#/components/schemas/Position'
+      minItems: 2
+    LinearRing:
+      description: >
+        A linear ring is a closed LineString with four or more positions.
+
+        The first and last positions are equivalent, and they MUST contain
+        identical values; their representation SHOULD also be identical.
+
+        A linear ring is the boundary of a surface or the boundary of a hole in
+        a surface.
+
+        A linear ring MUST follow the right-hand rule with respect to the area
+        it bounds, i.e., exterior rings are counterclockwise, and holes are
+        clockwise.
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3.1.6
+      type: array
+      items:
+        $ref: '#/components/schemas/Position'
+      minItems: 4
+    Point:
+      description: GeoJSon geometry
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3.1.2
+      allOf:
+        - $ref: '#/components/schemas/GeometryElement'
+        - type: object
+          required:
+            - type
+            - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+                - Point
+            coordinates:
+              $ref: '#/components/schemas/Position'
+    MultiPoint:
+      description: GeoJSon geometry
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3.1.3
+      allOf:
+        - $ref: '#/components/schemas/GeometryElement'
+        - type: object
+          required:
+            - coordinates
+          properties:
+            coordinates:
+              type: array
+              items:
+                $ref: '#/components/schemas/Position'
+    LineString:
+      description: GeoJSon geometry
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3.1.4
+      allOf:
+        - $ref: '#/components/schemas/GeometryElement'
+        - type: object
+          required:
+            - coordinates
+          properties:
+            coordinates:
+              $ref: '#/components/schemas/LineStringCoordinates'
+    MultiLineString:
+      description: GeoJSon geometry
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3.1.5
+      allOf:
+        - $ref: '#/components/schemas/GeometryElement'
+        - type: object
+          required:
+            - coordinates
+          properties:
+            coordinates:
+              type: array
+              items:
+                $ref: '#/components/schemas/LineStringCoordinates'
+    Polygon:
+      description: GeoJSon geometry
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3.1.6
+      allOf:
+        - $ref: '#/components/schemas/GeometryElement'
+        - type: object
+          required:
+            - coordinates
+          properties:
+            coordinates:
+              type: array
+              items:
+                $ref: '#/components/schemas/LinearRing'
+    MultiPolygon:
+      description: GeoJSon geometry
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3.1.7
+      allOf:
+        - $ref: '#/components/schemas/GeometryElement'
+        - type: object
+          required:
+            - coordinates
+          properties:
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LinearRing'
+    GeometryCollection:
+      type: object
+      description: >
+        GeoJSon geometry collection
+
+        GeometryCollections composed of a single part or a number of parts of a
+        single type SHOULD be avoided when that single part or a single object
+        of multipart type (MultiPoint, MultiLineString, or MultiPolygon) could
+        be used instead.
+      externalDocs:
+        url: https://tools.ietf.org/html/rfc7946#section-3.1.8
+      allOf:
+        - $ref: '#/components/schemas/Geometry'
+        - type: object
+          required:
+            - geometries
+          properties:
+            geometries:
+              type: array
+              items:
+                $ref: '#/components/schemas/GeometryElement'
+              minItems: 0
+    FeatureCollectionLinks:
+      type: array
+      items:
+        allOf:
+          - type: object
+            properties:
+              href:
+                type: string
+                format: uri
+              rel:
+                type: string
+                enum:
+                  - self
+                  - alternate
+                  - next
+                  - previous
+              title:
+                type: string
+              type:
+                type: string
+                enum:
+                  - application/geo+json
+                  - text/html
+    bbox:
+      type: array
+      minItems: 1
+      items:
+        type: array
+        oneOf:
+          - minItems: 4
+            maxItems: 4
+          - minItems: 6
+            maxItems: 6
+        items:
+          type: number
+    crs:
+      description: >-
+        Coordinate reference system of the coordinates in the spatial extent
+        (property `bbox`). The default reference system is WGS 84
+        longitude/latitude. In the Core the only other supported coordinate
+        reference system is WGS 84 longitude/latitude/ellipsoidal height for
+        coordinates with height. Extensions may support additional coordinate
+        reference systems and add additional enum values.
+      type: string
+      enum:
+        - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        - http://www.opengis.net/def/crs/OGC/0/CRS84h
+      default: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+    interval:
+      type: array
+      description: |
+        Temporal bounds for the dataset or query
+      minItems: 1
+      items:
+        type: array
+        minItems: 2
+        maxItems: 2
+        items:
+          type: string
+          format: date-time
+    extent:
+      type: object
+      description: |
+        spatial-temporal properties of the dataset
+      properties:
+        spatial:
+          description: |
+            spatial properties
+          type: object
+          properties:
+            bbox:
+              $ref: '#/components/schemas/bbox'
+            crs:
+              $ref: '#/components/schemas/crs'
+        temporal:
+          type: object
+          description: |
+            Temporal characteristics of dataset
+          properties:
+            interval:
+              $ref: '#/components/schemas/interval'
+            trs:
+              type: string
+              enum:
+                - http://www.opengis.net/def/uom/ISO-8601/0/Gregorian
+              default: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian
+    landingpage:
+      type: object
+      properties:
+        title:
+          type: string
+          enum:
+            - Dashboard API
+        description:
+          type: string
+          enum:
+            - Landing Page for the Demo API documentation
+        links:
+          type: array
+          items:
+            allOf:
+              - type: object
+                properties:
+                  href:
+                    type: string
+                  rel:
+                    type: string
+                    enum:
+                      - self
+                  type:
+                    type: string
+                    enum:
+                      - application/json
+                  title:
+                    type: string
+              - type: object
+                properties:
+                  href:
+                    type: string
+                  rel:
+                    type: string
+                    enum:
+                      - alternate
+                  type:
+                    type: string
+                    enum:
+                      - text/html
+                  title:
+                    type: string
+              - type: object
+                properties:
+                  href:
+                    type: string
+                  rel:
+                    type: string
+                    enum:
+                      - service-desc
+                  type:
+                    type: string
+                    enum:
+                      - application/json
+                  title:
+                    type: string
+              - type: object
+                properties:
+                  href:
+                    type: string
+                  rel:
+                    type: string
+                    enum:
+                      - service-doc
+                  type:
+                    type: string
+                    enum:
+                      - text/html
+                  title:
+                    type: string
+              - type: object
+                properties:
+                  href:
+                    type: string
+                  rel:
+                    type: string
+                    enum:
+                      - conformance
+                  type:
+                    type: string
+                    enum:
+                      - application/json
+                  title:
+                    type: string
+              - type: object
+                properties:
+                  href:
+                    type: string
+                  rel:
+                    type: string
+                    enum:
+                      - data
+                  type:
+                    type: string
+                    enum:
+                      - application/json
+    conformance:
+      type: object
+      required:
+        - conformsTo
+      properties:
+        conformsTo:
+          type: array
+          items:
+            type: string
+    basicCollection:
+      type: object
+      properties:
+        id:
+          type: string
+          enum:
+            - incidents
+            - coups
+            - goi
+            - traveladvisories
+            - conflicts
+        title:
+          type: string
+        description:
+          type: string
+        extent:
+          $ref: '#/components/schemas/extent'
+        itemtype:
+          type: string
+          default: feature
+        crs:
+          description: the list of coordinate reference systems supported by the service
+          type: array
+          items:
+            type: string
+          default:
+            - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+          example:
+            - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            - http://www.opengis.net/def/crs/EPSG/0/4326
+    collections:
+      type: object
+      properties:
+        links:
+          type: array
+          items:
+            allOf:
+              - type: object
+                properties:
+                  href:
+                    type: string
+                  rel:
+                    type: string
+                    enum:
+                      - self
+                  type:
+                    type: string
+                    enum:
+                      - application/json
+                  title:
+                    type: string
+              - type: object
+                properties:
+                  href:
+                    type: string
+                  rel:
+                    type: string
+                    enum:
+                      - alternate
+                  type:
+                    type: string
+                    enum:
+                      - text/html
+                  title:
+                    type: string
+              - type: object
+                properties:
+                  href:
+                    type: string
+                  rel:
+                    type: string
+                    enum:
+                      - enclosure
+                  type:
+                    type: string
+                    enum:
+                      - application/geopackage+sqlite3
+        collections:
+          type: array
+          items:
+            $ref: '#/components/schemas/basicCollection'
+    Incidents-get-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            incidentid:
+              type: string
+              format: uuid
+            dateoccurence:
+              type: string
+              format: date
+            incidentdesc:
+              type: string
+            groupname:
+              type: string
+            conflictname:
+              type: string
+            category:
+              type: string
+            locale:
+              type: string
+            country:
+              type: string
+              maxLength: 3
+              minLength: 3
+            name_1:
+              type: string
+            name_2:
+              type: string
+            name_3:
+              type: string
+            name_4:
+              type: string
+            name_5:
+              type: string
+    Incidents-get-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        numberMatched:
+          type: number
+        numberReturned:
+          type: number
+        timeStamp:
+          type: string
+          format: date
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incidents-get-feature'
+        links:
+          $ref: '#/components/schemas/FeatureCollectionLinks'
+    Conflicts-get-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            conflictid:
+              type: string
+              format: uuid
+            country:
+              type: string
+            conflictname:
+              type: string
+            startdate:
+              type: string
+              format: date
+            enddate:
+              type: string
+              format: date
+            overviewuri:
+              type: string
+              format: uri
+    Conflicts-get-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        numberMatched:
+          type: number
+        numberReturned:
+          type: number
+        timeStamp:
+          type: string
+          format: date
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conflicts-get-feature'
+        links:
+          $ref: '#/components/schemas/FeatureCollectionLinks'
+    Coups-get-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            coupid:
+              type: string
+              format: uuid
+            dateoccurence:
+              type: string
+              format: date
+            resolved:
+              type: boolean
+            resolutiondate:
+              type: string
+              format: date
+            country:
+              type: string
+    Coups-get-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        numberMatched:
+          type: number
+        numberReturned:
+          type: number
+        timeStamp:
+          type: string
+          format: date
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Coups-get-feature'
+        links:
+          $ref: '#/components/schemas/FeatureCollectionLinks'
+    Goi-get-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            groupid:
+              type: string
+              format: uuid
+            category:
+              type: string
+              enum:
+                - militant
+                - governmental
+                - civilian
+                - unknown
+                - cyberactor
+            groupname:
+              type: string
+            country:
+              type: string
+            uri:
+              type: string
+              format: uri
+    Goi-get-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        numberMatched:
+          type: number
+        numberReturned:
+          type: number
+        timeStamp:
+          type: string
+          format: date
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Goi-get-feature'
+        links:
+          $ref: '#/components/schemas/FeatureCollectionLinks'
+    TravelAdvisories-get-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            issuingcountry:
+              type: string
+            targetcountry:
+              type: string
+            dateissued:
+              type: string
+              format: date
+            liftdate:
+              type: string
+            uri:
+              type: string
+    TravelAdvisories-get-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        numberMatched:
+          type: number
+        numberReturned:
+          type: number
+        timeStamp:
+          type: string
+          format: date-time
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/TravelAdvisories-get-featurecollection'
+        links:
+          $ref: '#/components/schemas/FeatureCollectionLinks'
+    Incidents-post-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            dateoccurence:
+              type: string
+              format: date
+            incidentdesc:
+              type: string
+            groupid:
+              type: string
+              format: uuid
+            conflictid:
+              type: string
+              format: uuid
+            category:
+              $ref: >-
+                #/components/schemas/Incidents-put-feature/properties/properties/properties/category
+            locale:
+              type: string
+            success:
+              type: boolean
+    Incidents-post-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incidents-post-feature'
+    Conflicts-post-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            admin0:
+              type: string
+              maxLength: 3
+              minLength: 3
+            conflictname:
+              type: string
+            startdate:
+              type: string
+              format: date
+            enddate:
+              type: string
+              format: date
+            overviewuri:
+              type: string
+              format: uri
+    Conflicts-post-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conflicts-post-feature'
+    Coups-post-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            admin0:
+              type: string
+              maxLength: 3
+              minLength: 3
+            dateoccurence:
+              type: string
+              format: date
+            resolved:
+              type: boolean
+            resolutiondate:
+              type: string
+              format: date
+    Coups-post-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Coups-post-featurecollection'
+    Goi-post-feature:
+      type: object
+      properties:
+        category:
+          $ref: >-
+            #/components/schemas/Goi-get-feature/properties/properties/properties/category
+        groupname:
+          type: string
+        origin:
+          type: string
+          maxLength: 3
+          minLength: 3
+        uri:
+          type: string
+          format: uri
+    Goi-post-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Goi-post-feature'
+    TravelAdvisories-post-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            xcountry:
+              type: string
+              maxLength: 3
+              minLength: 3
+            ycountry:
+              type: string
+              maxLength: 3
+              minLength: 3
+            dateissued:
+              type: string
+              format: date
+            liftdate:
+              type: string
+              format: date
+            uri:
+              type: string
+              format: uri
+    TravelAdvisories-post-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/TravelAdvisories-post-feature'
+    Incidents-put-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            incidentid:
+              type: string
+              format: uuid
+            dateoccurence:
+              type: string
+              format: date
+            incidentdesc:
+              type: string
+            groupid:
+              type: string
+              format: uuid
+            conflictid:
+              type: string
+              format: uuid
+            category:
+              type: string
+              enum:
+                - engagement
+                - massacre
+                - terror
+                - protest
+                - assault
+                - facility/infrastructure-cyber
+                - facility/infrastructure-physical
+            locale:
+              type: string
+            success:
+              type: boolean
+    Incidents-put-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incidents-put-feature'
+    Conflicts-put-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            conflictid:
+              type: string
+              format: uuid
+            admin0:
+              type: string
+              maxLength: 3
+              minLength: 3
+            conflictname:
+              type: string
+            startdate:
+              type: string
+              format: date
+            enddate:
+              type: string
+              format: date
+            overviewuri:
+              type: string
+              format: uri
+    Conflicts-put-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conflicts-put-feature'
+    Coups-put-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            coupid:
+              type: string
+              format: uuid
+            admin0:
+              type: string
+              minLength: 3
+              maxLength: 3
+            dateoccurence:
+              type: string
+              format: date
+            resolved:
+              type: boolean
+            resolutiondate:
+              type: string
+              format: date
+    Coups-put-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Coups-put-feature'
+    Goi-put-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            groupid:
+              type: string
+              format: uuid
+            category:
+              $ref: >-
+                #/components/schemas/Goi-get-feature/properties/properties/properties/category
+            groupname:
+              type: string
+            origin:
+              type: string
+              maxLength: 3
+              minLength: 3
+            uri:
+              type: string
+              format: uri
+    Goi-put-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Goi-put-feature'
+    TravelAdvisories-put-feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+          properties:
+            advisoryid:
+              type: string
+              format: uuid
+            xcountry:
+              type: string
+              maxLength: 3
+              minLength: 3
+            ycountry:
+              type: string
+              maxLength: 3
+              minLength: 3
+            dateissued:
+              type: string
+              format: date
+            liftdate:
+              type: string
+              format: date
+    TravelAdvisories-put-featurecollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/TravelAdvisories-put-feature'
+  parameters:
+    core-query-bbox:
+      name: bbox
+      in: query
+      description: >-
+        Only features that have a geometry that intersects the bounding box are
+        selected.
+
+        The bounding box is provided as four or six numbers, depending on
+        whether the
+
+        coordinate reference system includes a vertical axis (height or depth):
+
+
+        * Lower left corner, coordinate axis 1
+
+        * Lower left corner, coordinate axis 2
+
+        * Minimum value, coordinate axis 3 (optional)
+
+        * Upper right corner, coordinate axis 1
+
+        * Upper right corner, coordinate axis 2
+
+        * Maximum value, coordinate axis 3 (optional)
+
+
+        If the value consists of four numbers, the coordinate reference system
+        is
+
+        WGS 84 longitude/latitude (http://www.opengis.net/def/crs/OGC/1.3/CRS84)
+
+        unless a different coordinate reference system is specified in the
+        parameter `bbox-crs`.
+
+
+        If the value consists of six numbers, the coordinate reference system is
+        WGS 84
+
+        longitude/latitude/ellipsoidal height
+        (http://www.opengis.net/def/crs/OGC/0/CRS84h)
+
+        unless a different coordinate reference system is specified in the
+        parameter `bbox-crs`.
+
+
+        The query parameter `bbox-crs` is specified in OGC API - Features - Part
+        2: Coordinate
+
+        Reference Systems by Reference.
+
+
+        For WGS 84 longitude/latitude the values are in most cases the sequence
+        of
+
+        minimum longitude, minimum latitude, maximum longitude and maximum
+        latitude.
+
+        However, in cases where the box spans the antimeridian the first value
+
+        (west-most box edge) is larger than the third value (east-most box
+        edge).
+
+
+        If the vertical axis is included, the third and the sixth number are the
+
+        bottom and the top of the 3-dimensional bounding box.
+
+
+        If a feature has multiple spatial geometry properties, it is the
+        decision of the
+
+        server whether only a single spatial geometry property is used to
+        determine
+
+        the extent or all relevant geometries.
+      required: false
+      schema:
+        type: array
+        minItems: 4
+        maxItems: 6
+        items:
+          type: number
+      style: form
+      explode: false
+    core-query-datetime:
+      name: datetime
+      in: query
+      description: >-
+        Either a date-time or an interval. Date and time expressions adhere to
+        RFC 3339.
+
+        Intervals may be bounded or half-bounded (double-dots at start or end).
+
+
+        Examples:
+
+
+        * A date-time: "2018-02-12T23:20:50Z"
+
+        * A bounded interval: "2018-02-12T00:00:00Z/2018-03-18T12:31:12Z"
+
+        * Half-bounded intervals: "2018-02-12T00:00:00Z/.." or
+        "../2018-03-18T12:31:12Z"
+
+
+        Only features that have a temporal property that intersects the value of
+
+        `datetime` are selected.
+
+
+        If a feature has multiple temporal properties, it is the decision of the
+
+        server whether only a single temporal property is used to determine
+
+        the extent or all relevant temporal properties.
+      required: false
+      schema:
+        type: string
+      style: form
+      explode: false
+    core-query-limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 10000
+        default: 10
+      style: form
+      explode: false
+    core-query-offset:
+      in: query
+      name: offset
+      required: false
+      schema:
+        type: integer
+      style: form
+      explode: false
+    core-query-f:
+      in: query
+      name: f
+      required: false
+      schema:
+        type: string
+        enum:
+          - json
+          - html
+      style: form
+      explode: false
+    core-query-radius:
+      in: query
+      name: radius
+      description: |
+        format: longitude,latitude, radiusDistance in meters
+      required: false
+      schema:
+        type: array
+        minItems: 3
+        maxItems: 3
+        items:
+          type: number
+      style: form
+      explode: false
+    all-query-admin0:
+      in: query
+      name: admin0
+      required: false
+      style: form
+      explode: false
+      schema:
+        $ref: >-
+          #/components/schemas/Conflicts-post-feature/properties/properties/properties/admin0
+    goi-query-category:
+      in: query
+      name: category
+      required: false
+      style: form
+      explode: false
+      schema:
+        $ref: >-
+          #/components/schemas/Goi-get-feature/properties/properties/properties/category
+    goi-query-groupname:
+      in: query
+      name: groupname
+      required: false
+      style: form
+      explode: false
+      schema:
+        type: string
+    goi-path-featureId:
+      in: path
+      name: featureId
+      required: true
+      schema:
+        $ref: >-
+          #/components/schemas/Goi-put-feature/properties/properties/properties/groupid
+    incidents-path-featureId:
+      in: path
+      name: featureId
+      required: true
+      schema:
+        $ref: >-
+          #/components/schemas/Incidents-get-feature/properties/properties/properties/incidentid
+    incidents-query-category:
+      in: query
+      name: category
+      required: false
+      style: form
+      explode: false
+      schema:
+        $ref: >-
+          #/components/schemas/Incidents-get-feature/properties/properties/properties/category
+    incidents-query-admin1:
+      in: query
+      name: admin1
+      required: false
+      style: form
+      explode: false
+      schema:
+        type: string
+    incidents-query-admin2:
+      in: query
+      name: admin2
+      required: false
+      style: form
+      explode: false
+      schema:
+        type: string
+    incidents-query-admin3:
+      in: query
+      name: admin3
+      required: false
+      style: form
+      explode: false
+      schema:
+        type: string
+    incidents-query-admin4:
+      in: query
+      name: admin4
+      required: false
+      style: form
+      explode: false
+      schema:
+        type: string
+    incidents-query-admin5:
+      in: query
+      name: query
+      required: false
+      style: form
+      explode: false
+      schema:
+        type: string
+    incidents-query-incidentdesc:
+      in: query
+      name: incidentdesc
+      required: false
+      style: form
+      explode: false
+      schema:
+        type: string
+    incidents-query-success:
+      in: query
+      name: success
+      required: false
+      style: form
+      explode: false
+      schema:
+        type: string
+    incidents-query-locale:
+      in: query
+      name: locale
+      required: false
+      style: form
+      explode: false
+      schema:
+        $ref: >-
+          #/components/schemas/Incidents-get-feature/properties/properties/properties/locale
+    coups-path-featureId:
+      in: path
+      name: featureId
+      required: true
+      schema:
+        $ref: >-
+          #/components/schemas/Coups-put-feature/properties/properties/properties/coupid
+    coups-query-resolved:
+      in: query
+      name: resolved
+      required: false
+      style: form
+      explode: false
+      schema:
+        type: boolean
+    traveladvisories-path-featureId:
+      in: path
+      name: featureId
+      required: true
+      schema:
+        $ref: >-
+          #/components/schemas/TravelAdvisories-put-feature/properties/properties/properties/advisoryid
+    traveladvisories-query-xcountry:
+      in: query
+      name: xcountry
+      required: false
+      style: form
+      explode: false
+      schema:
+        $ref: >-
+          #/components/schemas/Conflicts-post-feature/properties/properties/properties/admin0
+    traveladvisories-query-ycountry:
+      in: query
+      name: ycountry
+      required: false
+      style: form
+      explode: false
+      schema:
+        $ref: >-
+          #/components/schemas/Conflicts-post-feature/properties/properties/properties/admin0
+    conflicts-path-featureId:
+      in: path
+      name: featureId
+      required: true
+      schema:
+        $ref: >-
+          #/components/schemas/Conflicts-put-feature/properties/properties/properties/conflictid
+    conflicts-query-conflictname:
+      in: query
+      name: conflictname
+      required: false
+      style: form
+      explode: false
+      schema:
+        $ref: >-
+          #/components/schemas/Conflicts-put-feature/properties/properties/properties/conflictname
+  responses:
+    Error400BadRequest:
+      description: The JSON is not valid.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                enum:
+                  - 400
+              message:
+                type: string
+                enum:
+                  - The JSON is not valid.
+    Error401Unauthorized:
+      description: The request requires an user authentication.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                enum:
+                  - 401
+              message:
+                type: string
+                enum:
+                  - The request requires an user authentication.
+    Error403Forbidden:
+      description: The access is not allowed.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                enum:
+                  - 403
+              message:
+                type: string
+                enum:
+                  - The access is not allowed.
+    Error404NotFound:
+      description: The resource was not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                enum:
+                  - 404
+              message:
+                type: string
+                enum:
+                  - The resource was not found.
+    Error405MethodNotAllowed:
+      description: Request method is not supported for the requested resource.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                enum:
+                  - 405
+              message:
+                type: string
+                enum:
+                  - Request method is not supported for the requested resource.
+    Error406NotAcceptable:
+      description: Headers sent in the request are not compatible with the service.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                enum:
+                  - 406
+              message:
+                type: string
+                enum:
+                  - >-
+                    Headers sent in the request are not compatible with the
+                    service.
+    Error408RequestTimeout:
+      description: >
+        The client did not produce a request within the time that the server was
+        prepared to wait. The client may repeat the request without
+        modifications at any later time.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                enum:
+                  - 408
+              message:
+                type: string
+                enum:
+                  - >-
+                    The client did not produce a request within the time that
+                    the server was prepared to wait. The client may repeat the
+                    request without modifications at any later time.
+    Error410Gone:
+      description: >
+        The requested resource is no longer available and will not be available
+        again. The resource should be purged from the client system.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                enum:
+                  - 410
+              message:
+                type: string
+                enum:
+                  - >-
+                    The requested resource is no longer available and will not
+                    be available again. The resource should be purged from the
+                    client system.
+    Error423Locked:
+      description: The resource that is being accessed is locked.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                enum:
+                  - 423
+              message:
+                type: string
+                enum:
+                  - The resource that is being accessed is locked.
+    Error429TooManyRequests:
+      description: The user has sent too many requests in a short period.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                enum:
+                  - 429
+              message:
+                type: string
+                enum:
+                  - The user has sent too many requests in a short period.
+    Error500InternalServerError:
+      description: An unexpected error occured.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                enum:
+                  - 500
+              message:
+                type: string
+                enum:
+                  - An unexpected error occured.
+    Error503ServiceUnavailable:
+      description: The server is currently unable to handle the request.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                enum:
+                  - 503
+              message:
+                type: string
+                enum:
+                  - The server is currently unable to handle the request.
+servers:
+  - url: http://192.168.155.59:8080
+    description: serveraddress ;serverIP || localhost
