@@ -26,7 +26,7 @@ paths:
     get:
       x-exegesis-operationId: getConformance
       parameters:
-        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/f'
       responses: 
         '200':
           description: Successful Request.
@@ -142,12 +142,12 @@ paths:
       deprecated: false
       x-exegesis-operationId: getAllIncidents
       parameters:
-        - $ref: '#/components/parameters/core-query-limit' #Specify no. of features to be returned
-        - $ref: '#/components/parameters/core-query-offset' #Used with limit to enable pagination
-        - $ref: '#/components/parameters/core-query-f' #Specify the type of format that the server returns
-        - $ref: '#/components/parameters/core-query-radius' # Query features with x meters of a point
-        - $ref: '#/components/parameters/core-query-datetime' # Query features within a certain interval. If only one datetime param specified, return features that happened on that day
-        - $ref: '#/components/parameters/core-query-bbox' #Query features within a 4cornered bounding box. Only WGS84 is currently supported
+        - $ref: '#/components/parameters/limit' #Specify no. of features to be returned
+        - $ref: '#/components/parameters/offset' #Used with limit to enable pagination
+        - $ref: '#/components/parameters/f' #Specify the type of format that the server returns
+        - $ref: '#/components/parameters/radius' # Query features with x meters of a point
+        - $ref: '#/components/parameters/datetime' # Query features within a certain interval. If only one datetime param specified, return features that happened on that day
+        - $ref: '#/components/parameters/bbox' #Query features within a 4cornered bounding box. Only WGS84 is currently supported
         - $ref: '#/components/parameters/all-query-admin0' #Query by country
         - $ref: '#/components/parameters/incidents-query-incidentdesc'
         - $ref: '#/components/parameters/incidents-query-success'
@@ -158,8 +158,8 @@ paths:
         - $ref: '#/components/parameters/incidents-query-admin5'
         - $ref: '#/components/parameters/incidents-query-category'
         - $ref: '#/components/parameters/incidents-query-locale'
-        - $ref: '#/components/parameters/core-query-bbox-crs'
-        - $ref: '#/components/parameters/core-query-crs'
+        - $ref: '#/components/parameters/bbox-crs'
+        - $ref: '#/components/parameters/crs'
       responses:
         '200':
           description: Successful Request.
@@ -213,7 +213,7 @@ paths:
       x-exegesis-operationId: getOneIncident
       parameters:
         - $ref: '#/components/parameters/incidents-path-featureId'
-        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/f'
       responses:
         '200':
           description: Successful Request.
@@ -244,12 +244,12 @@ paths:
     get:
       x-exegesis-operationId: getAllConflicts
       parameters:
-        - $ref: '#/components/parameters/core-query-limit' #Specify no. of features to be returned
-        - $ref: '#/components/parameters/core-query-offset' #Used with limit to enable pagination
-        - $ref: '#/components/parameters/core-query-f' #Specify the type of format that the server returns
-        - $ref: '#/components/parameters/core-query-radius' # Query features with x meters of a point
-        - $ref: '#/components/parameters/core-query-datetime' # Query features within a certain interval. If only one datetime param specified, return features that happened on that day
-        - $ref: '#/components/parameters/core-query-bbox' #Query features within a 4cornered bounding box. Only WGS84 is currently supported
+        - $ref: '#/components/parameters/limit' #Specify no. of features to be returned
+        - $ref: '#/components/parameters/offset' #Used with limit to enable pagination
+        - $ref: '#/components/parameters/f' #Specify the type of format that the server returns
+        - $ref: '#/components/parameters/radius' # Query features with x meters of a point
+        - $ref: '#/components/parameters/datetime' # Query features within a certain interval. If only one datetime param specified, return features that happened on that day
+        - $ref: '#/components/parameters/bbox' #Query features within a 4cornered bounding box. Only WGS84 is currently supported
         - $ref: '#/components/parameters/all-query-admin0' #Query by country
         - $ref: '#/components/parameters/conflicts-query-conflictname'
       responses:
@@ -293,7 +293,7 @@ paths:
     get:
       x-exegesis-operationId: getOneConflict
       parameters:
-        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/f'
         - $ref: '#/components/parameters/conflicts-path-featureId'
       responses:
         '200':
@@ -321,12 +321,12 @@ paths:
     get:
       x-exegesis-operationId: getAllGOI
       parameters:
-        - $ref: '#/components/parameters/core-query-limit' #Specify no. of features to be returned
-        - $ref: '#/components/parameters/core-query-offset' #Used with limit to enable pagination
-        - $ref: '#/components/parameters/core-query-f' #Specify the type of format that the server returns
-        - $ref: '#/components/parameters/core-query-radius' # Query features with x meters of a point
-        - $ref: '#/components/parameters/core-query-datetime' # Query features within a certain interval. If only one datetime param specified, return features that happened on that day
-        - $ref: '#/components/parameters/core-query-bbox' #Query features within a 4cornered bounding box. Only WGS84 is currently supported
+        - $ref: '#/components/parameters/limit' #Specify no. of features to be returned
+        - $ref: '#/components/parameters/offset' #Used with limit to enable pagination
+        - $ref: '#/components/parameters/f' #Specify the type of format that the server returns
+        - $ref: '#/components/parameters/radius' # Query features with x meters of a point
+        - $ref: '#/components/parameters/datetime' # Query features within a certain interval. If only one datetime param specified, return features that happened on that day
+        - $ref: '#/components/parameters/bbox' #Query features within a 4cornered bounding box. Only WGS84 is currently supported
         - $ref: '#/components/parameters/all-query-admin0' #Query by country
         - $ref: '#/components/parameters/goi-query-category'
         - $ref: '#/components/parameters/goi-query-groupname'
@@ -370,7 +370,7 @@ paths:
       x-exegesis-operationId: getOneGOI
       parameters:
         - $ref: '#/components/parameters/goi-path-featureId'
-        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/f'
       responses:
         '200':
           description: Successful Request.
@@ -395,12 +395,12 @@ paths:
     get:
       x-exegesis-operationId: getAllCoups
       parameters:
-        - $ref: '#/components/parameters/core-query-limit' #Specify no. of features to be returned
-        - $ref: '#/components/parameters/core-query-offset' #Used with limit to enable pagination
-        - $ref: '#/components/parameters/core-query-f' #Specify the type of format that the server returns
-        - $ref: '#/components/parameters/core-query-radius' # Query features with x meters of a point
-        - $ref: '#/components/parameters/core-query-datetime' # Query features within a certain interval. If only one datetime param specified, return features that happened on that day
-        - $ref: '#/components/parameters/core-query-bbox' #Query features within a 4cornered bounding box. Only WGS84 is currently supported
+        - $ref: '#/components/parameters/limit' #Specify no. of features to be returned
+        - $ref: '#/components/parameters/offset' #Used with limit to enable pagination
+        - $ref: '#/components/parameters/f' #Specify the type of format that the server returns
+        - $ref: '#/components/parameters/radius' # Query features with x meters of a point
+        - $ref: '#/components/parameters/datetime' # Query features within a certain interval. If only one datetime param specified, return features that happened on that day
+        - $ref: '#/components/parameters/bbox' #Query features within a 4cornered bounding box. Only WGS84 is currently supported
         - $ref: '#/components/parameters/all-query-admin0' #Query by country
         - $ref: '#/components/parameters/coups-query-resolved'
       responses:
@@ -439,7 +439,7 @@ paths:
     get:
       x-exegesis-operationId: getOneCoup
       parameters:
-        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/f'
         - $ref: '#/components/parameters/coups-path-featureId'
       responses:
         '200':
@@ -456,12 +456,12 @@ paths:
     get:
       x-exegesis-operationId: getAllAdvisories
       parameters:
-        - $ref: '#/components/parameters/core-query-limit' #Specify no. of features to be returned
-        - $ref: '#/components/parameters/core-query-offset' #Used with limit to enable pagination
-        - $ref: '#/components/parameters/core-query-f' #Specify the type of format that the server returns
-        - $ref: '#/components/parameters/core-query-radius' # Query features with x meters of a point
-        - $ref: '#/components/parameters/core-query-datetime' # Query features within a certain interval. If only one datetime param specified, return features that happened on that day
-        - $ref: '#/components/parameters/core-query-bbox' #Query features within a 4cornered bounding box. Only WGS84 is currently supported
+        - $ref: '#/components/parameters/limit' #Specify no. of features to be returned
+        - $ref: '#/components/parameters/offset' #Used with limit to enable pagination
+        - $ref: '#/components/parameters/f' #Specify the type of format that the server returns
+        - $ref: '#/components/parameters/radius' # Query features with x meters of a point
+        - $ref: '#/components/parameters/datetime' # Query features within a certain interval. If only one datetime param specified, return features that happened on that day
+        - $ref: '#/components/parameters/bbox' #Query features within a 4cornered bounding box. Only WGS84 is currently supported
         - $ref: '#/components/parameters/all-query-admin0' #Query by country
         - $ref: '#/components/parameters/traveladvisories-query-xcountry'
         - $ref: '#/components/parameters/traveladvisories-query-ycountry'
@@ -503,7 +503,7 @@ paths:
     get:
       x-exegesis-operationId: getOneAdvisory
       parameters:
-        - $ref: '#/components/parameters/core-query-f'
+        - $ref: '#/components/parameters/f'
         - $ref: '#/components/parameters/traveladvisories-path-featureId'
       responses:
         '200':
@@ -528,6 +528,20 @@ paths:
                 type: array
                 items:
                   type: string
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  '/postgis_version':
+    description: Get the version of PostGIS used by the server
+    x-exegesis-controller: postgisController
+    get:
+      x-exegesis-operationId: getpostgisVersion
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/json:
+              schema:
+                type: string
         '400':
           $ref: '#/components/responses/Error400BadRequest'
 components:
@@ -1493,7 +1507,7 @@ components:
           $ref: '#/components/schemas/Goi-get-feature/properties/properties/properties/category'
         groupname:
           type: string
-        origin:
+        admin0:
           type: string
           maxLength: 3
           minLength: 3
@@ -1699,7 +1713,7 @@ components:
               $ref: '#/components/schemas/Goi-get-feature/properties/properties/properties/category'
             groupname:
               type: string
-            origin:
+            admin0:
               type: string
               maxLength: 3
               minLength: 3
@@ -1758,7 +1772,7 @@ components:
           items:
             $ref: '#/components/schemas/TravelAdvisories-put-feature'
   parameters:
-    core-query-bbox:
+    bbox:
       name: bbox
       in: query
       description: |-
@@ -1804,7 +1818,7 @@ components:
           type: number
       style: form
       explode: false
-    core-query-datetime:
+    datetime:
       name: datetime
       in: query
       description: |-
@@ -1828,7 +1842,7 @@ components:
         type: string
       style: form
       explode: false
-    core-query-limit:
+    limit:
       name: limit
       in: query
       required: false
@@ -1839,7 +1853,7 @@ components:
         default: 10
       style: form
       explode: false
-    core-query-offset:
+    offset:
       in: query
       name: offset
       required: false
@@ -1847,7 +1861,7 @@ components:
         type: integer
       style: form
       explode: false
-    core-query-f:
+    f:
       in: query
       name: f
       required: false
@@ -1858,7 +1872,7 @@ components:
           - html
       style: form
       explode: false
-    core-query-radius:
+    radius:
       in: query
       name: radius
       description: >
@@ -1872,23 +1886,32 @@ components:
           type: number
       style: form
       explode: false
-    core-query-crs:
+    crs:
       name: crs
+      description: > 
+        The default CRS is http://www.opengis.net/def/crs/OGC/1.3/CRS84 which is parsed as http://www.opengis.net/def/crs/EPSG/0/4326.
+        All the coordinate reference systems supported by PostGIS v3.4.0 are supported by this API.
+        They are all listed here and also accessible at the {baseURL}/spatial_ref_sys endpoint.
       in: query
       required: false
       schema:
         type: string
         format: uri
+        #default: http://www.opengis.net/def/crs/OGC/1.3/CRS84
       style: form
       explode: false
-    core-query-bbox-crs:
+    bbox-crs:
+      description: > 
+        The default CRS is http://www.opengis.net/def/crs/OGC/1.3/CRS84 which is parsed as http://www.opengis.net/def/crs/EPSG/0/4326.
+        All the coordinate reference systems supported by PostGIS v3.4.0 are supported by this API.
+        They are all listed here and also accessible at the {baseURL}/spatial_ref_sys endpoint.
       name: bbox-crs
       in: query
       required: false
       schema:
         type: string
         format: uri
-        default: urn:ogc:def:crs:EPSG:4326
+        #default: http://www.opengis.net/def/crs/OGC/1.3/CRS84
       style: form
       explode: false
 ####### collection specific params

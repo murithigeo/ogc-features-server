@@ -16,10 +16,11 @@ const { level0, level1, level2, level3, level4, level5, goi, conflicts } = requi
 const Incidents = models.incidents;
 const { Op } = require('sequelize');
 import { createServerLinks } from '../core/serverlinking';
-import { validateParams } from './validParamsFun';
-import { genLinks4featurecollection } from './core/linksGen';
+import { validateParams } from './core/validParamsFun';
+import { genLinks4feature, genLinks4featurecollection } from './core/linksGen';
 import calcPaging from './core/paging';
-import { verifyCRS } from './s_r_sController';
+import { verifyCRS } from './core/validateCRS';
+import { createFCobject } from './core/makeFCobject';
 /**
  * Retrieves the custom column details for a given CRS.
  * @param crs - The Coordinate Reference System (CRS) to use. Defaults to EPSG:4326. 
@@ -108,7 +109,7 @@ const attributes_goi = {
             'id',
             'groupid',
             'category',
-            'origin',
+            'admin0',
             'uri',
             'dateadd',
             'dateupdate'
@@ -197,8 +198,9 @@ exports.getAllIncidents = async function getAllIncidents(context) {
          * @bboxCrs - The Coordinate Reference System (CRS) to use. Defaults to EPSG:4326.
          */
         let bboxCrs: string;
-        context.params.query['bbox-crs'] === undefined || context.params.query === "https://www.opengis.net/def/crs/OGC/1.3/CRS84" ? bboxCrs = "http://www.opengis.net/def/crs/EPSG/0/4326" : bboxCrs=context.params.query['bbox-crs'];
-
+        context.params.query['bbox-crs'] === undefined || context.params.query['bbox-crs'] === "https://www.opengis.net/def/crs/OGC/1.3/CRS84" ? bboxCrs = "http://www.opengis.net/def/crs/EPSG/0/4326" : bboxCrs = context.params.query['bbox-crs'];
+        let crs: string;
+        context.params.query.crs === undefined || context.params.query.crs === "https://www.opengis.net/def/crs/OGC/1.3/CRS84" ? crs = "http://www.opengis.net/def/crs/EPSG/0/4326" : crs = context.params.query.crs;
         const bboxParameters = {
             minx: (context.params.query.bbox === undefined ? undefined : context.params.query.bbox[0]),
             maxx: (context.params.query.bbox === undefined ? undefined : context.params.query.bbox[1]),
@@ -207,7 +209,7 @@ exports.getAllIncidents = async function getAllIncidents(context) {
             lon: (context.params.query.radius === undefined ? undefined : context.params.query.radius[0]),
             lat: (context.params.query.radius === undefined ? undefined : context.params.query.radius[1]),
             radiusDistance: (context.params.query.radius == undefined ? undefined : context.params.query.radius[2]), // Add a default radius if none is provided
-            bboxSrid:parseInt(bboxCrs.split('/').pop())
+            bboxSrid: parseInt(bboxCrs.split('/').pop())
         };
 
         //Actual bbox filter
@@ -216,99 +218,76 @@ exports.getAllIncidents = async function getAllIncidents(context) {
         } : undefined;
 
         //Let the user define the crs of the output. Default is 4326
-        let crs: string;
-        context.params.query.crs === undefined || context.params.query === "https://www.opengis.net/def/crs/OGC/1.3/CRS84" ? crs = "http://www.opengis.net/def/crs/EPSG/0/4326" : crs = context.params.query.crs;
 
-        const columnDetails = await customColumnDetails(crs)
-        const validCRS = await verifyCRS(crs);
-        const validbboxCRS = await verifyCRS(bboxCrs);
-        //console.log(bboxCrs)
+        //console.log(context.params.query.crs)
+        //console.log(context.params.query['bbox-crs'])
+        const columnDetails = await customColumnDetails(crs);
 
-        if (!validCRS || validCRS.length < 1 || validbboxCRS.length < 1) {
+        if ((await verifyCRS(crs)).length < 1 || (await verifyCRS(bboxCrs)).length < 1) {
             context.res.status(400).setBody({ message: 'Invalid CRS. Please use a valid CRS' });
         } else {
-            // Query the database
-            const { count, rows } = await Incidents.findAndCountAll({
-                attributes: columnDetails,
-                include: [
-                    attributes_l0,  // Include the attributes from the level0 model
-                    attributes_l1,  // Include the attributes from the level1 model
-                    attributes_l2,  // Include the attributes from the level2 model
-                    attributes_l3,  // Include the attributes from the level3 model
-                    attributes_l4,  // Include the attributes from the level4 model
-                    attributes_l5,  // Include the attributes from the level5 model
-                    attributes_goi, // Include the attributes from the goi model
-                    attributes_conflicts    // Include the attributes from the conflicts model
-                ],
-                where: { // count,
-                    [Op.and]: {
-                        geom: {
-                            [Op.ne]: null //Does not include null geometries
-                        },
-                        [Op.and]: [ // Filter by the following parameters. Or is instead of and.
-                            incidentdesc,
-                            admin0,
-                            admin1,
-                            admin2,
-                            admin3,
-                            admin4,
-                            admin5,
-                            category,
-                            bbox,
-                            dateoccurence,
-                            radius
-                        ]
-
-                    }
-                },
-                order: [
-                    ['incidentid', 'ASC'] // Order by incidentid in ascending order. Enables constistent offset
-                ],
-                includeIgnoreAttributes: false, // Disables the generation of non-existent fields referring to foreign keys
-                replacements: bboxParameters,
-                limit: limit, // Filters number of results returned to user
-                offset: offset, // Enables pagination
-                raw: true
-            });
-
-            //offsets
-            const { nextPageOffset, prevPageOffset } = await calcPaging(count, limit, offset);
-            //console.log(nextPageOffset, prevPageOffset, maxOffset, limit)
-
-            //generate links
-            const links = await genLinks4featurecollection(collectionId, prevPageOffset, nextPageOffset, limit);
-
-            //generate a geojsonFeature/FeatureCollection dependent on a few factors
-            async function makeGeoJSON() {
-                if (rows.length < 1 || !rows) {
-                    context.res.status(404) //If rows object is empty, return 404
-                } else {
-                    let featuresArray: {};
-                    if (rows.length > 1) {
-                        featuresArray = rows.map(item => {
-                            const { type, coordinates } = item.geom;
-                            const { incidentid,
-                                dateoccurence,
+            try {
+                // Query the database
+                const { count, rows } = await Incidents.findAndCountAll({
+                    attributes: columnDetails,
+                    include: [
+                        attributes_l0,  // Include the attributes from the level0 model
+                        attributes_l1,  // Include the attributes from the level1 model
+                        attributes_l2,  // Include the attributes from the level2 model
+                        attributes_l3,  // Include the attributes from the level3 model
+                        attributes_l4,  // Include the attributes from the level4 model
+                        attributes_l5,  // Include the attributes from the level5 model
+                        attributes_goi, // Include the attributes from the goi model
+                        attributes_conflicts    // Include the attributes from the conflicts model
+                    ],
+                    where: { // count,
+                        [Op.and]: {
+                            geom: {
+                                [Op.ne]: null //Does not include null geometries
+                            },
+                            [Op.and]: [ // Filter by the following parameters. Or is instead of and.
                                 incidentdesc,
-                                groupname,
-                                conflictname,
+                                admin0,
+                                admin1,
+                                admin2,
+                                admin3,
+                                admin4,
+                                admin5,
                                 category,
-                                locale,
-                                country,
-                                name_1,
-                                name_2,
-                                name_3,
-                                name_4,
-                                name_5
-                            } = item;
-                            return {
-                                type: 'Feature',
-                                geometry: {
-                                    type,
-                                    coordinates
-                                },
-                                id: incidentid,
-                                properties: {
+                                bbox,
+                                dateoccurence,
+                                radius
+                            ]
+
+                        }
+                    },
+                    order: [
+                        ['incidentid', 'ASC'] // Order by incidentid in ascending order. Enables constistent offset
+                    ],
+                    includeIgnoreAttributes: false, // Disables the generation of non-existent fields referring to foreign keys
+                    replacements: bboxParameters,
+                    limit: limit, // Filters number of results returned to user
+                    offset: offset, // Enables pagination
+                    raw: true
+                });
+                console.log(count)
+                console.log(rows.length)
+                //offsets
+                const { nextPageOffset, prevPageOffset } = await calcPaging(count, limit, offset);
+
+                //generate links
+                const links = await genLinks4featurecollection(collectionId, prevPageOffset, nextPageOffset, limit);
+
+                //generate a geojsonFeature/FeatureCollection dependent on a few factors
+                async function makeGeoJSON() {
+                    if (rows.length < 1 || !rows) {
+                        context.res.status(404) //If rows object is empty, return 404
+                    } else {
+                        let featuresArray: Array<any> = [];
+                        if (rows.length > 1) {
+                            featuresArray = rows.map(item => {
+                                const { type, coordinates } = item.geom;
+                                const { incidentid,
                                     dateoccurence,
                                     incidentdesc,
                                     groupname,
@@ -321,134 +300,148 @@ exports.getAllIncidents = async function getAllIncidents(context) {
                                     name_3,
                                     name_4,
                                     name_5
+                                } = item;
+                                return {
+                                    type: 'Feature',
+                                    geometry: {
+                                        type,
+                                        coordinates
+                                    },
+                                    id: incidentid,
+                                    properties: {
+                                        dateoccurence,
+                                        incidentdesc,
+                                        groupname,
+                                        conflictname,
+                                        category,
+                                        locale,
+                                        country,
+                                        name_1,
+                                        name_2,
+                                        name_3,
+                                        name_4,
+                                        name_5
+                                    }
                                 }
-                            }
-                        });
-                    } else {
-                        featuresArray = {
-                            type: 'Feature',
-                            geometry: {
-                                type: rows[0].geom.type,
-                                coordinates: rows[0].geom.coordinates
-                            },
-                            id: rows[0].incidentid,
-                            properties: {
-                                dateoccurence: rows[0].dateoccurence,
-                                incidentdesc: rows[0].incidentdesc,
-                                groupname: rows[0].groupname,
-                                conflictname: rows[0].conflictname,
-                                category: rows[0].category,
-                                locale: rows[0].locale,
-                                country: rows[0].country,
-                                name_1: rows[0].name_1,
-                                name_2: rows[0].name_2,
-                                name_3: rows[0].name_3,
-                                name_4: rows[0].name_4,
-                                name_5: rows[0].name_5
-                            }
-                        };
+                            });
+                        } else {
+                            featuresArray = [{
+                                type: 'Feature',
+                                geometry: {
+                                    type: rows[0].geom.type,
+                                    coordinates: rows[0].geom.coordinates
+                                },
+                                id: rows[0].incidentid,
+                                properties: {
+                                    dateoccurence: rows[0].dateoccurence,
+                                    incidentdesc: rows[0].incidentdesc,
+                                    groupname: rows[0].groupname,
+                                    conflictname: rows[0].conflictname,
+                                    category: rows[0].category,
+                                    locale: rows[0].locale,
+                                    country: rows[0].country,
+                                    name_1: rows[0].name_1,
+                                    name_2: rows[0].name_2,
+                                    name_3: rows[0].name_3,
+                                    name_4: rows[0].name_4,
+                                    name_5: rows[0].name_5
+                                }
+                            }];
+                        }
+                        //console.log(rows)
+                        const featurecollection = await createFCobject(count, rows.length, featuresArray, links);
+                        context.res
+                            .status(200)
+                            .set('content-crs', `<${crs}>`)
+                            .set('content-type', 'application/geo+json')
+                            .set('content-type', 'application/json')
+                            .setBody(featurecollection);
                     }
-                    const featureCollection = {
-                        type: 'FeatureCollection',
-                        timeStamp: new Date().toJSON(),
-                        numberMatched: count,
-                        numberReturned: rows.length,
-                        features: featuresArray,
-                        links: links
-                    };
-                    context.res
-                        .status(200)
-                        .set('content-crs', crs)
-                        .set('content-type', 'application/geo+json')
-                        .set('content-type', 'application/json')
-                        .setBody(featureCollection);
                 }
+                await makeGeoJSON()
+            } catch (error) {
+                context.res.status(500).setBody({ message: error }) //Server error
             }
-            await makeGeoJSON()
         }
     }
 }
 
 exports.getOneIncident = async function getOneIncident(context) {
-    const { baseURL } = await createServerLinks();
-    const incidentid = context.params.path.featureId;
-    let f: string;
-    !context.params.query.f ? f = 'json' : f = context.params.query.f; // Set f='json' by default
-    let crs: string;
-    context.params.query.crs === undefined ? crs = "urn:ogc:def:crs:EPSG:4326" : crs = context.params.query.crs;
-    const columnDetails = await customColumnDetails(crs);
-    const rows = await Incidents.findByPk(incidentid, {
-        attributes: columnDetails,
-        include: [
-            attributes_l0,
-            attributes_l1,
-            attributes_l2,
-            attributes_l3,
-            attributes_l4,
-            attributes_l5,
-            attributes_goi,
-            attributes_conflicts,
-        ],
-        includeIgnoreAttributes: false,
-        raw: true
-    });
-    async function makeGeoJSON() {
-        if (rows < 1 || !rows) {
-            context.res.status(404);
+    const unexpectedParams = await validateParams(context);
+    if (unexpectedParams.length > 0) {
+        context.res.status(400);
+    } else {
+
+        const incidentid = context.params.path.featureId;
+        let f: string;
+        !context.params.query.f ? f = 'json' : f = context.params.query.f; // Set f='json' by default
+
+        let crs: string;
+        context.params.query.crs === undefined || context.params.query === "https://www.opengis.net/def/crs/OGC/1.3/CRS84" ? crs = "http://www.opengis.net/def/crs/EPSG/0/4326" : crs = context.params.query.crs;
+
+        const columnDetails = await customColumnDetails(crs);
+        const validCRS = await verifyCRS(crs);
+        if (!validCRS || validCRS.length < 1) {
+            context.res.status(400).setBody({ message: 'Invalid CRS. Please use a valid CRS' });
         } else {
-            const feature = {
-                type: 'Feature',
-                geometry: {
-                    type: rows.geom.type,
-                    coordinates: rows.geom.coordinates
-                },
-                id: rows.incidentid,
-                properties: {
-                    dateoccurence: rows.dateoccurence,
-                    incidentdesc: rows.incidentdesc,
-                    groupname: rows.groupname,
-                    conflictname: rows.conflictname,
-                    category: rows.category,
-                    locale: rows.locale,
-                    country: rows.country,
-                    name_1: rows.name_1,
-                    name_2: rows.name_2,
-                    name_3: rows.name_3,
-                    name_4: rows.name_4,
-                    name_5: rows.name_5
-                },
-                links: [
-                    {
-                        href: baseURL + "/collections/incidents/items/" + rows.incidentid + "?f=json",
-                        rel: "self",
-                        type: "application/geo+json",
-                        title: "This Feature"
-                    }, {
-                        href: baseURL + "/collections/incidents/items/" + rows.incidentid + "?f=html",
-                        rel: "alternate",
-                        type: "text/html",
-                        title: "Feature as HTML"
-                    }, {
-                        href: baseURL + "/collections/incidents/items?f=json",
-                        rel: "collection",
-                        type: "application/geo+json",
-                        title: "Link to main collection"
-                    }, {
-                        href: baseURL + "/collections/incidents/items/" + rows.incidentid + "?f=json",
-                        rel: "alternate",
-                        type: "application/json",
-                        title: "This Feature"
+            try {
+                const rows = await Incidents.findByPk(incidentid, {
+                    attributes: columnDetails,
+                    include: [
+                        attributes_l0,
+                        attributes_l1,
+                        attributes_l2,
+                        attributes_l3,
+                        attributes_l4,
+                        attributes_l5,
+                        attributes_goi,
+                        attributes_conflicts,
+                    ],
+                    includeIgnoreAttributes: false,
+                    raw: true
+                });
+                const links = await genLinks4feature('incidents', incidentid);
+                async function makeGeoJSON() {
+                    if (rows < 1 || !rows) {
+                        context.res.status(404);
+                    } else {
+                        const feature = {
+                            type: 'Feature',
+                            geometry: {
+                                type: rows.geom.type,
+                                coordinates: rows.geom.coordinates
+                            },
+                            id: rows.incidentid,
+                            properties: {
+                                dateoccurence: rows.dateoccurence,
+                                incidentdesc: rows.incidentdesc,
+                                groupname: rows.groupname,
+                                conflictname: rows.conflictname,
+                                category: rows.category,
+                                locale: rows.locale,
+                                country: rows.country,
+                                name_1: rows.name_1,
+                                name_2: rows.name_2,
+                                name_3: rows.name_3,
+                                name_4: rows.name_4,
+                                name_5: rows.name_5
+                            },
+                            links: links
+                        };
+                        context.res
+                            .status(200)
+                            .set('content-crs', `<${crs}>`)
+                            .set('content-type', 'application/json')
+                            .set('content-type', 'application/geo+json')
+                            .setBody(feature);
                     }
-                ]
-            };
-            context.res
-                .status(200)
-                .set('content-type', 'application/json')
-                .set('content-type', 'application/geo+json')
-                .setBody(feature);
+                }
+                await makeGeoJSON();
+            } catch (error) {
+                context.res.status(500);
+            }
         }
     }
-    await makeGeoJSON();
 }
 
 

@@ -1,5 +1,5 @@
 import { createServerLinks } from "../core/serverlinking";
-import { validateParams } from "./validParamsFun";
+import { validateParams } from "./core/validParamsFun";
 exports.getConformance = async function getConformance(context) {
     const unexpectedParams = await validateParams(context);
     if (unexpectedParams.length > 0) {

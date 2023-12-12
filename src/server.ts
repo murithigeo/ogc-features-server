@@ -6,7 +6,7 @@ import * as http from "http";
 import * as exegesisExpress from "exegesis-express";
 import * as fs from 'fs';
 import * as morgan from "morgan";
-import { addServers } from "./core/serversArraying";
+import { addServers } from "./core/apidefUpdate";
 
 async function createServer() {
     const options = {

@@ -64,7 +64,7 @@ module.exports = (sequelize, DataTypes) => {
             onDelete: 'RESTRICT'
         });
         Level0.hasMany(models.goi, {
-            foreignKey: 'origin',
+            foreignKey: 'admin0',
             sourceKey: 'admin0',
             onUpdate: 'CASCADE',
             onDelete: 'RESTRICT'

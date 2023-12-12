@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true,
         },
         groupname: DataTypes.STRING,
-        origin: {
+        admin0: {
             type: DataTypes.STRING(3),
             references: {
                 model: 'level0',
@@ -47,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
     });
     GOI.associate = function (models) {
         GOI.belongsTo(models.level0, {
-            foreignKey: 'origin',
+            foreignKey: 'admin0',
             targetKey: 'admin0',
         });
         GOI.hasMany(models.incidents, {

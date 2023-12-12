@@ -1,6 +1,6 @@
 import * as sequelize from 'sequelize';
 import { createServerLinks } from '../core/serverlinking';
-import { validateParams } from './validParamsFun';
+import { validateParams } from './core/validParamsFun';
 const { level0 } = require('../models');
 const { Op } = require('sequelize');
 const Conflicts = require('../models').conflicts;
