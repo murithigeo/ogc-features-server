@@ -11,6 +11,6 @@ export async function getIPAddress() {
         });
     }
     const serverIP = ips === 0 ? 'localhost' : ips;
-    const PORT = process.env.PORT || 8080;
+    const PORT = process.env.PORT || 80;
     return { serverIP, PORT };
 }

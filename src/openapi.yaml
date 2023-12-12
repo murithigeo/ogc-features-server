@@ -158,6 +158,8 @@ paths:
         - $ref: '#/components/parameters/incidents-query-admin5'
         - $ref: '#/components/parameters/incidents-query-category'
         - $ref: '#/components/parameters/incidents-query-locale'
+        - $ref: '#/components/parameters/core-query-bbox-crs'
+        - $ref: '#/components/parameters/core-query-crs'
       responses:
         '200':
           description: Successful Request.
@@ -502,6 +504,24 @@ paths:
             application/geo+json:
               schema:
                 $ref: '#/components/schemas/TravelAdvisories-get-featurecollection'
+        '400':
+          $ref: '#/components/responses/Error400BadRequest'
+  /spatial_ref_systems:
+    description: >-
+      Get all available spatial reference systems. All srs in PostGIS are
+      supported. PostGIS v3.4.0 is used.
+    x-exegesis-controller: s_r_sController
+    get:
+      x-exegesis-operationId: getSpatialRefSystems
+      responses:
+        '200':
+          description: Successful Request.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
         '400':
           $ref: '#/components/responses/Error400BadRequest'
 components:
@@ -1851,6 +1871,25 @@ components:
           type: number
       style: form
       explode: false
+    core-query-crs:
+      name: crs
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uri
+      style: form
+      explode: false
+    core-query-bbox-crs:
+      name: bbox-crs
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uri
+        default: urn:ogc:def:crs:EPSG:4326
+      style: form
+      explode: false
     all-query-admin0:
       in: query
       name: admin0
@@ -2216,5 +2255,5 @@ components:
                 enum:
                   - The server is currently unable to handle the request.
 servers:
-  - url: http://192.168.155.59:8080
+  - url: http://192.168.36.98
     description: serveraddress ;serverIP || localhost

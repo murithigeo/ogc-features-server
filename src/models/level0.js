@@ -1,4 +1,4 @@
-const DataTypes = require("sequelize");
+//const DataTypes = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     const Level0 = sequelize.define('level0', {
         fid: {

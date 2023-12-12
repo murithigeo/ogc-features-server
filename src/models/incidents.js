@@ -157,12 +157,6 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'conflictid',
             targetKey: 'conflictid'
         });
-        Incidents.hasMany(models.itracker, {
-            foreignKey: 'incidentid',
-            sourceKey: 'incidentid',
-            onUpdate: 'CASCADE',
-            onDelete: 'RESTRICT'
-        });
     };
     return Incidents;
 };

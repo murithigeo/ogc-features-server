@@ -1,46 +1,68 @@
 import * as sequelize from 'sequelize';
 import * as models from '../models';
+/**
+ * This file contains the incidents controller.
+ * It handles the logic for managing incidents.
+ */
+/**
+ * Controller for handling incidents.
+ */
+/**
+ * This file imports the required models for the incidents controller.
+ * The imported models are level0, level1, level2, level3, level4, level5, goi, and conflicts.
+ */
+
 const { level0, level1, level2, level3, level4, level5, goi, conflicts } = require('../models');
 const Incidents = models.incidents;
 const { Op } = require('sequelize');
-//import * as Op from 'sequelize';
 import { createServerLinks } from '../core/serverlinking';
-import * as queryString from "querystring";
 import { validateParams } from './validParamsFun';
-// Speficify resulting fieldnames
-const defaultAttributes = [
-    'incidentid',
-    'dateoccurence',
-    'geom',
-    'success',
-    'incidentdesc',
-    'category',
-    'locale',
-    [
-        sequelize.col('"level0"."country"'), 'country'
-    ],
-    [
-        sequelize.col('"level1"."name_1"'), 'name_1'
-    ],
-    [
-        sequelize.col('"level2"."name_2"'), 'name_2'
-    ],
-    [
-        sequelize.col('"level3"."name_3"'), 'name_3'
-    ],
-    [
-        sequelize.col('"level4"."name_4"'), 'name_4'
-    ],
-    [
-        sequelize.col('"level5"."name_5"'), 'name_5'
-    ],
-    [
-        sequelize.col('"goi"."groupname"'), 'groupname'
-    ],
-    [
-        sequelize.col('"conflict"."conflictname"'), 'conflictname'
+import { genLinks4featurecollection } from './core/linksGen';
+import calcPaging from './core/paging';
+import { verifyCRS } from './s_r_sController';
+/**
+ * Retrieves the custom column details for a given CRS.
+ * @param crs - The Coordinate Reference System (CRS) to use. Defaults to EPSG:4326. 
+ * @returns An array of column details.
+ */
+
+async function customColumnDetails(crs: string) {
+    const columnDetails = [
+        'incidentid',
+        'dateoccurence',
+        'incidentdesc',
+        'category',
+        'locale',
+        [
+            sequelize.fn('ST_Transform', sequelize.col('"incidents"."geom"'), parseInt(crs.split('/').pop())), 'geom'
+        ],
+        [
+            sequelize.col('"level0"."country"'), 'country'
+        ],
+        [
+            sequelize.col('"level1"."name_1"'), 'name_1'
+        ],
+        [
+            sequelize.col('"level2"."name_2"'), 'name_2'
+        ],
+        [
+            sequelize.col('"level3"."name_3"'), 'name_3'
+        ],
+        [
+            sequelize.col('"level4"."name_4"'), 'name_4'
+        ],
+        [
+            sequelize.col('"level5"."name_5"'), 'name_5'
+        ],
+        [
+            sequelize.col('"goi"."groupname"'), 'groupname'
+        ],
+        [
+            sequelize.col('"conflict"."conflictname"'), 'conflictname'
+        ]
     ]
-];
+    return columnDetails
+}
 
 // Will be used in other models, therefore should be a global attribute
 const attributes_l0 = {
@@ -116,293 +138,247 @@ exports.getAllIncidents = async function getAllIncidents(context) {
     if (unexpectedParams.length > 0) {
         context.res.status(400);
     } else {
+        const collectionId = 'incidents';
         let f: string;
         let limit: number;
         let offset: number;
-        const { baseURL } = await createServerLinks();
-        //To be implemented after geoJSON compliance complete
+
+        // Set f='json' by default
         context.params.query.f === undefined ? f = 'json' : f = context.params.query.f;
-        context.params.query.offset == undefined || context.params.query.offset < 0 || context.params.query.offset == 'NaN' ? offset = 0 : offset = context.params.query.offset; // If user input is less than 0, set defined offset as 0. Otherwise set to requested offset
-        context.params.query.limit == undefined ? limit = 10 :  limit = context.params.query.limit; // set limit to 10 by default}
-        // Filter by success
-        const success = context.params.query.success ? {
-            success: context.params.query.success
-        } : undefined;
-        // Filter by admin0......admin5
-        const admin0 = context.params.query.admin0 ? {
-            admin0: context.params.query.admin0
-        } : undefined;
-        const admin1 = context.params.query.admin1 ? {
-            admin1: context.params.query.admin1
-        } : undefined;
-        const admin2 = context.params.query.admin2 ? {
-            admin2: context.params.query.admin2
-        } : undefined;
-        const admin3 = context.params.query.admin3 ? {
-            admin3: context.params.query.admin3
-        } : undefined;
-        const admin4 = context.params.query.admin4 ? {
-            admin4: context.params.query.admin4
-        } : undefined;
-        const admin5 = context.params.query.admin5 ? {
-            admin5: context.params.query.admin5
-        } : undefined;
+
+        // set offset to 0 by default
+        context.params.query.offset === undefined || context.params.query.offset < 0 ? offset = 0 : offset = context.params.query.offset;
+
+        // set limit to 10 by default
+        context.params.query.limit === undefined ? limit = 10 : limit = context.params.query.limit; // set limit to 10 by default}
+
+        // Filter by administrative units from admin0 to admin5
+        const admin0 = context.params.query.admin0 ? { admin0: context.params.query.admin0 } : undefined;
+        const admin1 = context.params.query.admin1 ? { admin1: context.params.query.admin1 } : undefined;
+        const admin2 = context.params.query.admin2 ? { admin2: context.params.query.admin2 } : undefined;
+        const admin3 = context.params.query.admin3 ? { admin3: context.params.query.admin3 } : undefined;
+        const admin4 = context.params.query.admin4 ? { admin4: context.params.query.admin4 } : undefined;
+        const admin5 = context.params.query.admin5 ? { admin5: context.params.query.admin5 } : undefined;
 
         // Filter by category
-        const category = context.params.query.category ? {
-            category: context.params.query.category
-        } : undefined;
+        const category = context.params.query.category ? { category: context.params.query.category } : undefined;
 
-        // Filter by incidentdesc. Uses like to match characters. Future Implementation will use a more advanced algorithm
-        const incidentdesc = context.params.query.incidentdesc ? {
-            incidentdesc: {
-                [Op.like]: context.params.query.incidentdesc
-            }
-        } : undefined;
+        // Filter by incidentdesc. A more quality algorithm will be implemented
+        const incidentdesc = context.params.query.incidentdesc ? { incidentdesc: { [Op.like]: context.params.query.incidentdesc } } : undefined;
 
-        // Filter by bounding box
-        const bbox = context.params.query.bbox ? {
-            bbox: sequelize.literal('st_contains(st_makeenvelope(:minx,:miny,:maxx,:maxy,4326),"incidents"."geom") is true')
-        } : undefined;
         // Filter by radius. radiusDistance is in metres. End user must make their own conversions.
-        const radius = context.params.query.radius ? {
-            radius: sequelize.literal('st_distancesphere("incidents"."geom",st_makepoint(:lon,:lat)) <= :radiusDistance')
-        } : undefined;
-        // Future support to be added for geocoded gtdb entries. As is, only records having geodata will be used.
-        // Nested ternary operator:
-        const dateoccurence = context.params.query.datetime ? context.params.query.datetime.split('/').length > 1 ? { // If datetime value is entered by user, dateoccurence is init
-            dateoccurence: { // When '/' separated value detected and items>1, then look for incidents that happened on between provided daterange
+        const radius = context.params.query.radius ? { radius: sequelize.literal('st_distancesphere("incidents"."geom",st_makepoint(:lon,:lat)) <= :radiusDistance') } : undefined;
+
+
+        /**
+         * Represents the date occurrence filter for incidents.
+         * If a datetime value is entered by the user, dateoccurence is initialized
+         * to look for incidents that happened between the provided date range.
+         * If the datetime value is a single date, dateoccurence is set to that date.
+         * If two datetimes are provided, dateoccurence is set to the range between the two dates.
+         * If no datetime value is provided, dateoccurence is undefined.
+         */
+
+        const dateoccurence = context.params.query.datetime ? context.params.query.datetime.split('/').length > 1 ? {
+            dateoccurence: {
                 [Op.between]: [
                     context.params.query.datetime.split('/')[0],
                     context.params.query.datetime.split('/')[1]
                 ]
-            } // Otherwise, if stringSplit array has does not have more than two items, then look for incidents on particular date
+            }
         } : {
             dateoccurence: context.params.query.datetime.split('/')[0]
         } : undefined;
-        // Filter by incident.admin0 !== goi.origin
 
-        // Replacement values for bounding box queries since sequelize does not support native POSTGIS/Postgres Functions
+        /**
+         * contains replacements for placeholders in the query
+         * @param bbox - Is a four box array containing values for bbox
+         * @param radius - Is a three box array. Takes in longitude, latitude and radiusDistance in that order  
+         * @bboxCrs - The Coordinate Reference System (CRS) to use. Defaults to EPSG:4326.
+         */
+        let bboxCrs: string;
+        context.params.query['bbox-crs'] === undefined || context.params.query === "https://www.opengis.net/def/crs/OGC/1.3/CRS84" ? bboxCrs = "http://www.opengis.net/def/crs/EPSG/0/4326" : bboxCrs=context.params.query['bbox-crs'];
+
         const bboxParameters = {
-            minx: (context.params.query.bbox == undefined ? undefined : context.params.query.bbox[0]),
-            miny: (context.params.query.bbox == undefined ? undefined : context.params.query.bbox[1]),
-            maxx: (context.params.query.bbox == undefined ? undefined : context.params.query.bbox[2]),
-            maxy: (context.params.query.bbox == undefined ? undefined : context.params.query.bbox[3]),
-            lon: (context.params.query.radius == undefined ? undefined : context.params.query.radius[0]),
-            lat: (context.params.query.radius == undefined ? undefined : context.params.query.radius[1]),
+            minx: (context.params.query.bbox === undefined ? undefined : context.params.query.bbox[0]),
+            maxx: (context.params.query.bbox === undefined ? undefined : context.params.query.bbox[1]),
+            maxy: (context.params.query.bbox === undefined ? undefined : context.params.query.bbox[2]),
+            miny: (context.params.query.bbox === undefined ? undefined : context.params.query.bbox[3]),
+            lon: (context.params.query.radius === undefined ? undefined : context.params.query.radius[0]),
+            lat: (context.params.query.radius === undefined ? undefined : context.params.query.radius[1]),
             radiusDistance: (context.params.query.radius == undefined ? undefined : context.params.query.radius[2]), // Add a default radius if none is provided
+            bboxSrid:parseInt(bboxCrs.split('/').pop())
         };
 
-        //Retrieve data from db through defined models
-        const { count, rows } = await Incidents.findAndCountAll({
-            attributes: defaultAttributes,
-            include: [
-                attributes_l0,
-                attributes_l1,
-                attributes_l2,
-                attributes_l3,
-                attributes_l4,
-                attributes_l5,
-                attributes_goi,
-                attributes_conflicts
-            ],
-            where: { // count,
-                [Op.and]: {
-                    geom: {
-                        [Op.ne]: null // All values have geometries/Field is not null
-                    },
-                    [Op.and]: [
-                        incidentdesc,
-                        success,
-                        admin0,
-                        admin1,
-                        admin2,
-                        admin3,
-                        admin4,
-                        admin5,
-                        category,
-                        bbox,
-                        dateoccurence,
-                        radius,
-                        // datasource
-                    ]
+        //Actual bbox filter
+        const bbox = context.params.query.bbox ? {
+            bbox: sequelize.literal('ST_Contains(ST_Transform(ST_MakeEnvelope(:minx, :maxx, :maxy, :miny, :bboxCrs), 4326), "incidents"."geom") is true')
+        } : undefined;
 
-                }
-            },
-            order: [
-                ['incidentid', 'ASC']
-            ],
-            includeIgnoreAttributes: false, // Disables the generation of non-existent fields referring to foreign keys
-            replacements: bboxParameters,
-            // offset: offset,
-            limit: limit, // Filters number of results returned to user
-            offset: offset,// Enables pagination
-            // plain: true,
-            raw: true
-        });
+        //Let the user define the crs of the output. Default is 4326
+        let crs: string;
+        context.params.query.crs === undefined || context.params.query === "https://www.opengis.net/def/crs/OGC/1.3/CRS84" ? crs = "http://www.opengis.net/def/crs/EPSG/0/4326" : crs = context.params.query.crs;
 
-        //Calculate next & prev page offsets and looping pagination for use in serverRendering
-        const maxOffset: number = count - limit; //max allowable pagination
-        let nextPageOffset = offset + limit;
-        let prevPageOffset = offset - limit;
-        nextPageOffset > maxOffset ? nextPageOffset = maxOffset : nextPageOffset = nextPageOffset;
-        prevPageOffset > maxOffset ? prevPageOffset = maxOffset : prevPageOffset = prevPageOffset;
+        const columnDetails = await customColumnDetails(crs)
+        const validCRS = await verifyCRS(crs);
+        const validbboxCRS = await verifyCRS(bboxCrs);
+        //console.log(bboxCrs)
 
-        //generate a geojsonFeature/FeatureCollection dependent on a few factors
-        async function makeGeoJSON() {
-            if (rows.length < 1 || !rows) {
-                context.res.status(404) //since dbResponse is empty, return not found code
-            } else {
-                if (rows.length > 1) {
-                    const featuresArray = rows.map(item => {
-                        const { type, coordinates } = item.geom;
-                        const { incidentid,
-                            dateoccurence,
+        if (!validCRS || validCRS.length < 1 || validbboxCRS.length < 1) {
+            context.res.status(400).setBody({ message: 'Invalid CRS. Please use a valid CRS' });
+        } else {
+            // Query the database
+            const { count, rows } = await Incidents.findAndCountAll({
+                attributes: columnDetails,
+                include: [
+                    attributes_l0,  // Include the attributes from the level0 model
+                    attributes_l1,  // Include the attributes from the level1 model
+                    attributes_l2,  // Include the attributes from the level2 model
+                    attributes_l3,  // Include the attributes from the level3 model
+                    attributes_l4,  // Include the attributes from the level4 model
+                    attributes_l5,  // Include the attributes from the level5 model
+                    attributes_goi, // Include the attributes from the goi model
+                    attributes_conflicts    // Include the attributes from the conflicts model
+                ],
+                where: { // count,
+                    [Op.and]: {
+                        geom: {
+                            [Op.ne]: null //Does not include null geometries
+                        },
+                        [Op.and]: [ // Filter by the following parameters. Or is instead of and.
                             incidentdesc,
-                            groupname,
-                            conflictname,
+                            admin0,
+                            admin1,
+                            admin2,
+                            admin3,
+                            admin4,
+                            admin5,
                             category,
-                            locale,
-                            success,
-                            country,
-                            name_1,
-                            name_2,
-                            name_3,
-                            name_4,
-                            name_5
-                        } = item;
-                        return {
-                            type: 'Feature',
-                            geometry: {
-                                type,
-                                coordinates
-                            },
-                            id: incidentid,
-                            properties: {
+                            bbox,
+                            dateoccurence,
+                            radius
+                        ]
+
+                    }
+                },
+                order: [
+                    ['incidentid', 'ASC'] // Order by incidentid in ascending order. Enables constistent offset
+                ],
+                includeIgnoreAttributes: false, // Disables the generation of non-existent fields referring to foreign keys
+                replacements: bboxParameters,
+                limit: limit, // Filters number of results returned to user
+                offset: offset, // Enables pagination
+                raw: true
+            });
+
+            //offsets
+            const { nextPageOffset, prevPageOffset } = await calcPaging(count, limit, offset);
+            //console.log(nextPageOffset, prevPageOffset, maxOffset, limit)
+
+            //generate links
+            const links = await genLinks4featurecollection(collectionId, prevPageOffset, nextPageOffset, limit);
+
+            //generate a geojsonFeature/FeatureCollection dependent on a few factors
+            async function makeGeoJSON() {
+                if (rows.length < 1 || !rows) {
+                    context.res.status(404) //If rows object is empty, return 404
+                } else {
+                    let featuresArray: {};
+                    if (rows.length > 1) {
+                        featuresArray = rows.map(item => {
+                            const { type, coordinates } = item.geom;
+                            const { incidentid,
                                 dateoccurence,
                                 incidentdesc,
                                 groupname,
                                 conflictname,
                                 category,
                                 locale,
-                                success,
                                 country,
                                 name_1,
                                 name_2,
                                 name_3,
                                 name_4,
                                 name_5
+                            } = item;
+                            return {
+                                type: 'Feature',
+                                geometry: {
+                                    type,
+                                    coordinates
+                                },
+                                id: incidentid,
+                                properties: {
+                                    dateoccurence,
+                                    incidentdesc,
+                                    groupname,
+                                    conflictname,
+                                    category,
+                                    locale,
+                                    country,
+                                    name_1,
+                                    name_2,
+                                    name_3,
+                                    name_4,
+                                    name_5
+                                }
                             }
-                        }
-                    });
-                    const featurecollection = {
-                        type: 'FeatureCollection',
-                        timeStamp: new Date().toJSON(),
-                        numberMatched: count,
-                        numberReturned: rows.length,
-                        features: featuresArray,
-                        links: [
-                            {
-                                href: baseURL + "/collections/incidents/items?f=json", // f to be added laters
-                                rel: "self",
-                                type: "application/json", // geo+json and json are interoperable
-                                title: "Incidents Collection"
-                            }, {
-                                href: baseURL + "/collections/incidents/items?f=html", // FeatureCollection as html
-                                rel: "alternate",
-                                type: "text/html",
-                                title: "IncidentsFeatureCollection as HTML"
-                            }, {
-                                href: baseURL + "/collections/incidents/items?f=json&offset=" + nextPageOffset + "&limit=" + limit,
-                                rel: "next",
-                                type: "application/json",
-                                title: "next page"
-                            }, {
-                                href: baseURL + "/collections/incidents/items?f=json&offset=" + prevPageOffset + "&limit=" + limit,
-                                rel: "previous",
-                                type: "application/json",
-                                title: "Previous page"
+                        });
+                    } else {
+                        featuresArray = {
+                            type: 'Feature',
+                            geometry: {
+                                type: rows[0].geom.type,
+                                coordinates: rows[0].geom.coordinates
+                            },
+                            id: rows[0].incidentid,
+                            properties: {
+                                dateoccurence: rows[0].dateoccurence,
+                                incidentdesc: rows[0].incidentdesc,
+                                groupname: rows[0].groupname,
+                                conflictname: rows[0].conflictname,
+                                category: rows[0].category,
+                                locale: rows[0].locale,
+                                country: rows[0].country,
+                                name_1: rows[0].name_1,
+                                name_2: rows[0].name_2,
+                                name_3: rows[0].name_3,
+                                name_4: rows[0].name_4,
+                                name_5: rows[0].name_5
                             }
-                        ]
+                        };
                     }
-                    context.res
-                        .status(200)
-                        .set('content-type', 'application/json')
-                        .set('content-type', 'application/geo+json')
-                        .setBody(featurecollection);
-                } else {
-                    const featuresArray = {
-                        type: 'Feature',
-                        geometry: {
-                            type: rows[0].geom.type,
-                            coordinates: rows[0].geom.coordinates
-                        },
-                        id: rows[0].incidentid,
-                        properties: {
-                            dateoccurence: rows[0].dateoccurence,
-                            incidentdesc: rows[0].incidentdesc,
-                            groupname: rows[0].groupname,
-                            conflictname: rows[0].conflictname,
-                            category: rows[0].category,
-                            locale: rows[0].locale,
-                            success: rows[0].success,
-                            country: rows[0].country,
-                            name_1: rows[0].name_1,
-                            name_2: rows[0].name_2,
-                            name_3: rows[0].name_3,
-                            name_4: rows[0].name_4,
-                            name_5: rows[0].name_5
-                        }
-                    };
                     const featureCollection = {
                         type: 'FeatureCollection',
                         timeStamp: new Date().toJSON(),
                         numberMatched: count,
                         numberReturned: rows.length,
                         features: featuresArray,
-                        links: [
-                            {
-                                href: baseURL + "/collections/incidents/items?f=json", // f to be added laters
-                                rel: "self",
-                                type: "application/json", // geo+json and json are interoperable
-                                title: "Incidents Collection"
-                            }, {
-                                href: baseURL + "/collections/incidents/items?f=html", // FeatureCollection as html
-                                rel: "alternate",
-                                type: "text/html",
-                                title: "IncidentsFeatureCollection as HTML"
-                            }, {
-                                href: baseURL + "/collections/incidents/items?f=json&offset=" + nextPageOffset + "&limit=" + limit,
-                                rel: "next",
-                                type: "application/json",
-                                title: "next page"
-                            }, {
-                                href: baseURL + "/collections/incidents/items?f=json&offset=" + prevPageOffset + "&limit=" + limit,
-                                rel: "previous",
-                                type: "application/json",
-                                title: "Previous page"
-                            }
-                        ]
+                        links: links
                     };
                     context.res
                         .status(200)
+                        .set('content-crs', crs)
                         .set('content-type', 'application/geo+json')
                         .set('content-type', 'application/json')
                         .setBody(featureCollection);
                 }
             }
+            await makeGeoJSON()
         }
-        await makeGeoJSON()
     }
-
 }
+
 exports.getOneIncident = async function getOneIncident(context) {
     const { baseURL } = await createServerLinks();
     const incidentid = context.params.path.featureId;
     let f: string;
     !context.params.query.f ? f = 'json' : f = context.params.query.f; // Set f='json' by default
+    let crs: string;
+    context.params.query.crs === undefined ? crs = "urn:ogc:def:crs:EPSG:4326" : crs = context.params.query.crs;
+    const columnDetails = await customColumnDetails(crs);
     const rows = await Incidents.findByPk(incidentid, {
-        attributes: defaultAttributes,
+        attributes: columnDetails,
         include: [
             attributes_l0,
             attributes_l1,
@@ -434,7 +410,6 @@ exports.getOneIncident = async function getOneIncident(context) {
                     conflictname: rows.conflictname,
                     category: rows.category,
                     locale: rows.locale,
-                    success: rows.success,
                     country: rows.country,
                     name_1: rows.name_1,
                     name_2: rows.name_2,
@@ -456,8 +431,13 @@ exports.getOneIncident = async function getOneIncident(context) {
                     }, {
                         href: baseURL + "/collections/incidents/items?f=json",
                         rel: "collection",
-                        type: "application/json",
+                        type: "application/geo+json",
                         title: "Link to main collection"
+                    }, {
+                        href: baseURL + "/collections/incidents/items/" + rows.incidentid + "?f=json",
+                        rel: "alternate",
+                        type: "application/json",
+                        title: "This Feature"
                     }
                 ]
             };
@@ -494,7 +474,6 @@ exports.updateIncidents = async function updateIncidents(context) {
             const {
                 incidentid,
                 dateoccurence,
-                success,
                 category,
                 eventdesc,
                 groupid,
@@ -505,7 +484,6 @@ exports.updateIncidents = async function updateIncidents(context) {
                 incidentid,
                 geom,
                 dateoccurence,
-                success,
                 category,
                 eventdesc,
                 groupid,
@@ -522,7 +500,6 @@ exports.updateIncidents = async function updateIncidents(context) {
         } else {
             rowsFind.eventdesc = context.requestBody.features[0].properties.eventdesc;
             rowsFind.dateoccurence = context.requestBody.features[0].properties.dateoccurence;
-            rowsFind.success = context.requestBody.features[0].properties.success;
             rowsFind.category = context.requestBody.features[0].properties.category;
             rowsFind.groupid = context.requestBody.features[0].properties.groupid;
             rowsFind.conflictid = context.requestBody.features[0].properties.conflictid;
@@ -538,7 +515,6 @@ exports.updateIncidents = async function updateIncidents(context) {
 exports.addIncidents = async function addIncidents(context) {
     if (context.requestBody.features.length < 2) {
         const dateoccurence = context.requestBody.features[0].properties.dateoccurence;
-        const success = context.requestBody.features[0].properties.success;
         const category = context.requestBody.features[0].properties.category;
         const incidentdesc = context.requestBody.features[0].properties.incidentdesc;
         const groupid = context.requestBody.features[0].properties.groupid;
@@ -547,7 +523,6 @@ exports.addIncidents = async function addIncidents(context) {
         const locale = context.requestBody.features[0].properties.locale;
         const rows = await Incidents.create({
             dateoccurence: dateoccurence,
-            success: success,
             conflictid: conflictid,
             incidentdesc: incidentdesc,
             groupid: groupid,
@@ -562,7 +537,6 @@ exports.addIncidents = async function addIncidents(context) {
             const {
                 incidentid,
                 dateoccurence,
-                success,
                 conflictid,
                 groupid,
                 incidentdesc,
@@ -577,7 +551,6 @@ exports.addIncidents = async function addIncidents(context) {
                 },
                 incidentid,
                 dateoccurence,
-                success,
                 conflictid,
                 groupid,
                 incidentdesc,
@@ -590,8 +563,11 @@ exports.addIncidents = async function addIncidents(context) {
     }
 }
 export async function downloadIncidents() {
+    let crs: string;
+    this.context.params.query.crs === undefined ? crs = "urn:ogc:def:crs:EPSG:4326" : crs = this.context.params.query.crs.split(':')[5];
+    const columnDetails = await customColumnDetails(crs);
     const rows = await Incidents.findAll({
-        attributes: defaultAttributes,
+        attributes: columnDetails,
         include: [
             attributes_conflicts,
             attributes_goi,
@@ -622,7 +598,6 @@ export async function downloadIncidents() {
             conflictname,
             category,
             locale,
-            success,
             country,
             name_1,
             name_2,
@@ -644,7 +619,6 @@ export async function downloadIncidents() {
                 conflictname,
                 category,
                 locale,
-                success,
                 country,
                 name_1,
                 name_2,

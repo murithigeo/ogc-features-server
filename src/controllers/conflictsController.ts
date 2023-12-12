@@ -15,7 +15,9 @@ const defaultAttributes = [
     [
         sequelize.col('"level0"."country"'), 'country'
     ],
-    [sequelize.literal('ST_Simplify("level0"."geom", 0.001)'), 'geom']
+    [
+        sequelize.literal('ST_Simplify("level0"."geom", 0.001)'), 'geom'
+    ]
 ];
 const attributes_l0 = {
     model: level0,

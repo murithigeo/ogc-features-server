@@ -4,9 +4,12 @@ import * as db from "../models";
 //import the baseURL
 import { createServerLinks } from "../core/serverlinking";
 import { validateParams } from "./validParamsFun";
+import { genLinks4collections, genMainLinks } from "./core/linksGen";
+
+const srsNameTemplate: string = "urn:ogc:def:crs:EPSG:";
 
 //Define Reference Systems
-const storageCRS: string = "http://www.opengis.net/def/crs/OGC/1.3/CRS84";
+const storageCRS = srsNameTemplate + 4326;
 const trs: string = "http://www.opengis.net/def/uom/ISO-8601/0/Gregorian";
 
 
@@ -15,29 +18,22 @@ async function incidentsCollection() {
 
     const dateTimeMin = await db.sequelize.query("select MIN(dateoccurence) from incidents;", { type: QueryTypes.SELECT });
     const dateTimeMax = await db.sequelize.query("select MAX(dateoccurence) from incidents;", { type: QueryTypes.SELECT });
-    //const bbox = await db.sequelize.query("select st_setsrid(st_extent(geom), 4326) as bbox from incidents;", { type: QueryTypes.SELECT });
-    const bboxMinx = await db.sequelize.query("select st_xmin(st_setsrid(st_extent(geom), 4326)) as minx from incidents;", { type: QueryTypes.SELECT });
-    const bboxMaxx = await db.sequelize.query("select st_xmax(st_setsrid(st_extent(geom), 4326)) as maxx from incidents;", { type: QueryTypes.SELECT });
-    const bboxMaxy = await db.sequelize.query("select st_ymax(st_setsrid(st_extent(geom), 4326)) as maxy from incidents;", { type: QueryTypes.SELECT });
-    const bboxMiny = await db.sequelize.query("select st_ymin(st_setsrid(st_extent(geom), 4326)) as miny from incidents;", { type: QueryTypes.SELECT });
-    const links = [
-        {
-            href: baseURL + "/collections/incidents",
-            rel: "self",
-            title: "incidentsCollection"
-        }, {
-            href: baseURL + "/collections/incidents/items",
-            rel: "items",
-            title: "All incidents available in the collection",
-            type: "application/geo+json" // Can also be application/geojson due to crosscompactibility. Future implementation of an exegesis geojson parser
-        }, {
-            href: baseURL + "/collections/incidents.gpkg",
-            rel: "enclosure",
-            type: "application/geopackage+sqlite3",
-            title: "Bulk download all incidents(GeoPackage)",
-            length: "TBD"
-        }
-    ];
+
+    //To reduce the number of queries, we could use just one query
+    const bbox = await db.sequelize.query("select st_setsrid(st_extent(geom), 4326) as bbox from incidents;", { type: QueryTypes.SELECT });
+
+    const bboxMinx = bbox[0]["bbox"]["coordinates"][0][0][0];
+    //await db.sequelize.query("select st_xmin(st_setsrid(st_extent(geom), 4326)) as minx from incidents;", { type: QueryTypes.SELECT });
+    const bboxMaxx = bbox[0]["bbox"]["coordinates"][0][2][0];
+    //await db.sequelize.query("select st_xmax(st_setsrid(st_extent(geom), 4326)) as maxx from incidents;", { type: QueryTypes.SELECT });
+
+    const bboxMaxy = bbox[0]["bbox"]["coordinates"][0][2][1];
+    //await db.sequelize.query("select st_ymax(st_setsrid(st_extent(geom), 4326)) as maxy from incidents;", { type: QueryTypes.SELECT });
+
+    const bboxMiny = bbox[0]["bbox"]["coordinates"][0][0][1];
+    //await db.sequelize.query("select st_ymin(st_setsrid(st_extent(geom), 4326)) as miny from incidents;", { type: QueryTypes.SELECT });
+    const links = await genLinks4collections('incidents');
+
     const incidentsMetadata = {
         id: "incidents",
         title: "[Security Incidents] collection",
@@ -45,10 +41,10 @@ async function incidentsCollection() {
         extent: {
             spatial: {
                 bbox: [[
-                    bboxMinx[0]["minx"],
-                    bboxMaxx[0]["maxx"],
-                    bboxMaxy[0]["maxy"],
-                    bboxMiny[0]["miny"]
+                    bboxMinx,
+                    bboxMaxx,
+                    bboxMaxy,
+                    bboxMiny
                 ]],
                 crs: storageCRS
             },
@@ -64,7 +60,7 @@ async function incidentsCollection() {
         },
         itemType: "feature",
         crs: [
-            "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+            storageCRS
         ],
         storageCrs: storageCRS,
         links: links
@@ -77,28 +73,22 @@ async function conflictsCollection() {
 
     const dateTimeMax = await db.sequelize.query("select MAX(startdate) from conflicts;", { type: QueryTypes.SELECT });
     const dateTimeMin = await db.sequelize.query("select MIN(startdate) from conflicts;", { type: QueryTypes.SELECT });
-    const bboxMinx = await db.sequelize.query("select st_xmin(st_setsrid(st_extent(l0.geom),4326)) as minx from conflicts c inner join level0 l0 on c.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMaxx = await db.sequelize.query("select st_xmax(st_setsrid(st_extent(l0.geom),4326)) as maxx from conflicts c inner join level0 l0 on c.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMaxy = await db.sequelize.query("select st_ymax(st_setsrid(st_extent(l0.geom),4326)) as maxy from conflicts c inner join level0 l0 on c.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMiny = await db.sequelize.query("select st_ymin(st_setsrid(st_extent(l0.geom),4326)) as miny from conflicts c inner join level0 l0 on c.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
-    const links = [
-        {
-            href: baseURL + "/collections/conflicts",
-            rel: "self",
-            title: "conflictsCollection"
-        }, {
-            href: baseURL + "/collections/conflicts/items",
-            rel: "items",
-            type: "application/geo+json",
-            title: "conflicts"
-        }, {
-            href: baseURL + "/collections/conflicts.gpkg",
-            rel: "enclosure",
-            type: "application/geopackage+sqlite3",
-            title: "Bulk download all incidents(GeoPackage)",
-            length: "TBD"
-        }
-    ];
+    const bbox = await db.sequelize.query("select st_setsrid(st_extent(l0.geom),4326) as bbox from conflicts c inner join level0 l0 on c.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMinx = bbox[0]["bbox"]["coordinates"][0][0][0];
+    //await db.sequelize.query("select st_xmin(st_setsrid(st_extent(l0.geom),4326)) as minx from conflicts c inner join level0 l0 on c.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMaxx = bbox[0]["bbox"]["coordinates"][0][2][0];
+    //await db.sequelize.query("select st_xmax(st_setsrid(st_extent(l0.geom),4326)) as maxx from conflicts c inner join level0 l0 on c.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMaxy = bbox[0]["bbox"]["coordinates"][0][2][1];
+    //await db.sequelize.query("select st_ymax(st_setsrid(st_extent(l0.geom),4326)) as maxy from conflicts c inner join level0 l0 on c.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMiny = bbox[0]["bbox"]["coordinates"][0][0][1];
+    //await db.sequelize.query("select st_ymin(st_setsrid(st_extent(l0.geom),4326)) as miny from conflicts c inner join level0 l0 on c.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const links = await genLinks4collections('conflicts');
+
     const conflictsMedata = {
         id: "conflicts",
         title: "conflictsCollection",
@@ -107,10 +97,10 @@ async function conflictsCollection() {
             spatial: {
                 bbox: [
                     [
-                        bboxMinx[0]["minx"],
-                        bboxMaxx[0]["maxx"],
-                        bboxMaxy[0]["maxy"],
-                        bboxMiny[0]["miny"]
+                        bboxMinx,
+                        bboxMaxx,
+                        bboxMaxy,
+                        bboxMiny
                     ]
                 ],
                 crs: storageCRS
@@ -127,7 +117,7 @@ async function conflictsCollection() {
         },
         itemType: "feature",
         crs: [
-            "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+            storageCRS
         ],
         storageCrs: storageCRS,
         links: links
@@ -135,32 +125,22 @@ async function conflictsCollection() {
     return conflictsMedata
 }
 async function coupsCollection() {
-    const { baseURL } = await createServerLinks(); //Init incidentsCollection
-
     const dateTimeMin = await db.sequelize.query("select MIN(dateoccurence) from coups;", { type: QueryTypes.SELECT });
     const dateTimeMax = await db.sequelize.query("select MAX(dateoccurence) from coups;", { type: QueryTypes.SELECT });
-    const bboxMinx = await db.sequelize.query("select st_xmin(st_setsrid(st_extent(l0.geom), 4326)) as minx from coups co inner join level0 l0 on co.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMaxx = await db.sequelize.query("select st_xmax(st_setsrid(st_extent(l0.geom), 4326)) as maxx from coups co inner join level0 l0 on co.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMaxy = await db.sequelize.query("select st_ymax(st_setsrid(st_extent(l0.geom), 4326)) as maxy from coups co inner join level0 l0 on co.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMiny = await db.sequelize.query("select st_ymin(st_setsrid(st_extent(l0.geom), 4326)) as miny from coups co inner join level0 l0 on co.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
+    const bbox = await db.sequelize.query("select st_setsrid(st_extent(l0.geom), 4326) as bbox from coups co inner join level0 l0 on co.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
 
-    const links = [
-        {
-            href: baseURL + "/collections/coups",
-            rel: "self",
-            title: "coups"
-        }, {
-            href: baseURL + "/collections/coups/items",
-            rel: "items",
-            type: "application/json"
-        }, {
-            href: baseURL + "/collections/incidents.gpkg",
-            rel: "enclosure",
-            title: "Bulk download all coups(GeoPackage)",
-            type: "application/geopackage+sqlite3",
-            length: "TBD"
-        }
-    ];
+    const bboxMinx = bbox[0]["bbox"]["coordinates"][0][0][0];
+    //await db.sequelize.query("select st_xmin(st_setsrid(st_extent(l0.geom), 4326)) as minx from coups co inner join level0 l0 on co.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMaxx = bbox[0]["bbox"]["coordinates"][0][2][0];
+    //await db.sequelize.query("select st_xmax(st_setsrid(st_extent(l0.geom), 4326)) as maxx from coups co inner join level0 l0 on co.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMaxy = bbox[0]["bbox"]["coordinates"][0][2][1];
+    //await db.sequelize.query("select st_ymax(st_setsrid(st_extent(l0.geom), 4326)) as maxy from coups co inner join level0 l0 on co.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMiny = bbox[0]["bbox"]["coordinates"][0][0][1];
+    //await db.sequelize.query("select st_ymin(st_setsrid(st_extent(l0.geom), 4326)) as miny from coups co inner join level0 l0 on co.admin0 = l0.admin0;", { type: QueryTypes.SELECT });
+    const links = await genLinks4collections('coups');
     const coupsMetadata = {
         id: "coups",
         title: "coups",
@@ -169,10 +149,10 @@ async function coupsCollection() {
             spatial: {
                 bbox: [
                     [
-                        bboxMinx[0]["minx"],
-                        bboxMaxx[0]["maxx"],
-                        bboxMaxy[0]["maxy"],
-                        bboxMiny[0]["miny"]
+                        bboxMinx,
+                        bboxMaxx,
+                        bboxMaxy,
+                        bboxMiny
                     ]
                 ],
                 crs: storageCRS
@@ -197,28 +177,22 @@ async function coupsCollection() {
 }
 
 async function goiCollection() {
-    const { baseURL } = await createServerLinks(); //Init incidentsCollection
-    const bboxMinx = await db.sequelize.query("select st_xmin(st_setsrid(st_extent(l0.geom), 4326)) as minx from goi g inner join level0 l0 on g.origin = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMaxx = await db.sequelize.query("select st_xmax(st_setsrid(st_extent(l0.geom), 4326)) as maxx from goi g inner join level0 l0 on g.origin = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMaxy = await db.sequelize.query("select st_ymax(st_setsrid(st_extent(l0.geom), 4326)) as maxy from goi g inner join level0 l0 on g.origin = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMiny = await db.sequelize.query("select st_ymin(st_setsrid(st_extent(l0.geom), 4326)) as miny from goi g inner join level0 l0 on g.origin = l0.admin0;", { type: QueryTypes.SELECT });
-    const links = [
-        {
-            href: baseURL + "/collections/goi",
-            rel: "self",
-            title: "Groups of Interest"
-        }, {
-            href: baseURL + "/collections/goi/items",
-            rel: "items",
-            type: "application/geo+json"
-        }, {
-            href: baseURL + "/collections/goi.gpkg",
-            rel: "enclosure",
-            title: "Bulk download all goi(GeoPackage)",
-            type: "application/geopackage+sqlite3",
-            length: "TBD"
-        }
-    ];
+    const bbox = await db.sequelize.query("select st_setsrid(st_extent(l0.geom), 4326) as bbox from goi g inner join level0 l0 on g.origin = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMinx = bbox[0]["bbox"]["coordinates"][0][0][0];
+    //await db.sequelize.query("select st_xmin(st_setsrid(st_extent(l0.geom), 4326)) as minx from goi g inner join level0 l0 on g.origin = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMaxx = bbox[0]["bbox"]["coordinates"][0][2][0];
+    //await db.sequelize.query("select st_xmax(st_setsrid(st_extent(l0.geom), 4326)) as maxx from goi g inner join level0 l0 on g.origin = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMaxy = bbox[0]["bbox"]["coordinates"][0][2][1];
+    //await db.sequelize.query("select st_ymax(st_setsrid(st_extent(l0.geom), 4326)) as maxy from goi g inner join level0 l0 on g.origin = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMiny = bbox[0]["bbox"]["coordinates"][0][0][1];
+    //await db.sequelize.query("select st_ymin(st_setsrid(st_extent(l0.geom), 4326)) as miny from goi g inner join level0 l0 on g.origin = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const links = await genLinks4collections('goi');
+
     const goiMetadata = {
         id: "goi",
         title: "groupsofInterest",
@@ -227,10 +201,10 @@ async function goiCollection() {
             spatial: {
                 bbox: [
                     [
-                        bboxMinx[0]["minx"],
-                        bboxMaxx[0]["maxx"],
-                        bboxMaxy[0]["maxy"],
-                        bboxMiny[0]["miny"]
+                        bboxMinx,
+                        bboxMaxx,
+                        bboxMaxy,
+                        bboxMiny
                     ]
                 ],
                 crs: storageCRS
@@ -255,40 +229,48 @@ async function goiCollection() {
 }
 
 async function traveladvisoriesCollection() {
-    const { baseURL } = await createServerLinks(); //Init incidentsCollection
 
-    const dateTimeMin = await db.sequelize.query("select MIN(dateissued) from traveladvisories;", { type: QueryTypes.SELECT });
-    const dateTimeMax = await db.sequelize.query("select MIN(dateissued) from traveladvisories;", { type: QueryTypes.SELECT });
+    //Interval: dateissued
+    const dateTimeMinIssued = await db.sequelize.query("select MIN(dateissued) from traveladvisories;", { type: QueryTypes.SELECT });
+    const dateTimeMaxIssued = await db.sequelize.query("select MAX(dateissued) from traveladvisories;", { type: QueryTypes.SELECT });
+
+    //Interval: liftdate
+    const dateTimeMinLift = await db.sequelize.query("select MIN(liftdate) from traveladvisories;", { type: QueryTypes.SELECT });
+    const dateTimeMaxLift = await db.sequelize.query("select MAX(liftdate) from traveladvisories;", { type: QueryTypes.SELECT });
 
     //Xcountry
-    const bboxMinxXcountry = await db.sequelize.query("select st_xmin(st_setsrid(st_extent(l0.geom), 4326)) as minx from traveladvisories t_a inner join level0 l0 on t_a.xcountry = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMaxxXcountry = await db.sequelize.query("select st_xmax(st_setsrid(st_extent(l0.geom), 4326)) as maxx from traveladvisories t_a inner join level0 l0 on t_a.xcountry = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMaxyXcountry = await db.sequelize.query("select st_ymax(st_setsrid(st_extent(l0.geom), 4326)) as maxy from traveladvisories t_a inner join level0 l0 on t_a.xcountry = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMinyXcountry = await db.sequelize.query("select st_ymin(st_setsrid(st_extent(l0.geom), 4326)) as miny from traveladvisories t_a inner join level0 l0 on t_a.xcountry = l0.admin0;", { type: QueryTypes.SELECT });
+    const bboxX = await db.sequelize.query("select st_setsrid(st_extent(l0.geom), 4326) as bbox from traveladvisories t_a inner join level0 l0 on t_a.xcountry = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMinxXcountry = bboxX[0]["bbox"]["coordinates"][0][0][0];
+    //const bboxMinxXcountry = await db.sequelize.query("select st_xmin(st_setsrid(st_extent(l0.geom), 4326)) as minx from traveladvisories t_a inner join level0 l0 on t_a.xcountry = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMaxxXcountry = bboxX[0]["bbox"]["coordinates"][0][2][0];
+    //const bboxMaxxXcountry = await db.sequelize.query("select st_xmax(st_setsrid(st_extent(l0.geom), 4326)) as maxx from traveladvisories t_a inner join level0 l0 on t_a.xcountry = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMaxyXcountry = bboxX[0]["bbox"]["coordinates"][0][2][1];
+    //const bboxMaxyXcountry = await db.sequelize.query("select st_ymax(st_setsrid(st_extent(l0.geom), 4326)) as maxy from traveladvisories t_a inner join level0 l0 on t_a.xcountry = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMinyXcountry = bboxX[0]["bbox"]["coordinates"][0][0][1];
+    //const bboxMinyXcountry = await db.sequelize.query("select st_ymin(st_setsrid(st_extent(l0.geom), 4326)) as miny from traveladvisories t_a inner join level0 l0 on t_a.xcountry = l0.admin0;", { type: QueryTypes.SELECT });
 
     //Ycountry
-    const bboxMinxYcountry = await db.sequelize.query("select st_xmin(st_setsrid(st_extent(l0.geom), 4326)) as minx from traveladvisories t_a inner join level0 l0 on t_a.ycountry = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMaxxYcountry = await db.sequelize.query("select st_xmax(st_setsrid(st_extent(l0.geom), 4326)) as maxx from traveladvisories t_a inner join level0 l0 on t_a.ycountry = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMaxyYcountry = await db.sequelize.query("select st_ymax(st_setsrid(st_extent(l0.geom), 4326)) as maxy from traveladvisories t_a inner join level0 l0 on t_a.ycountry = l0.admin0;", { type: QueryTypes.SELECT });
-    const bboxMinyYcountry = await db.sequelize.query("select st_ymin(st_setsrid(st_extent(l0.geom), 4326)) as miny from traveladvisories t_a inner join level0 l0 on t_a.ycountry = l0.admin0;", { type: QueryTypes.SELECT });
+    const bboxY = await db.sequelize.query("select st_setsrid(st_extent(l0.geom), 4326) as bbox from traveladvisories t_a inner join level0 l0 on t_a.ycountry = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMinxYcountry = bboxY[0]["bbox"]["coordinates"][0][0][0];
+    //const bboxMinxYcountry = await db.sequelize.query("select st_xmin(st_setsrid(st_extent(l0.geom), 4326)) as minx from traveladvisories t_a inner join level0 l0 on t_a.ycountry = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMaxxYcountry = bboxY[0]["bbox"]["coordinates"][0][2][0];
+    //const bboxMaxxYcountry = await db.sequelize.query("select st_xmax(st_setsrid(st_extent(l0.geom), 4326)) as maxx from traveladvisories t_a inner join level0 l0 on t_a.ycountry = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMaxyYcountry = bboxY[0]["bbox"]["coordinates"][0][2][1];
+    //const bboxMaxyYcountry = await db.sequelize.query("select st_ymax(st_setsrid(st_extent(l0.geom), 4326)) as maxy from traveladvisories t_a inner join level0 l0 on t_a.ycountry = l0.admin0;", { type: QueryTypes.SELECT });
+
+    const bboxMinyYcountry = bboxY[0]["bbox"]["coordinates"][0][0][1];
+    //const bboxMinyYcountry = await db.sequelize.query("select st_ymin(st_setsrid(st_extent(l0.geom), 4326)) as miny from traveladvisories t_a inner join level0 l0 on t_a.ycountry = l0.admin0;", { type: QueryTypes.SELECT });
+
     // Links
-    const links = [
-        {
-            href: baseURL + "/collections/traveladvisories",
-            rel: "self",
-            title: "TravelAdvisories"
-        }, {
-            href: baseURL + "/collections/traveladvisories/items",
-            rel: "items",
-            type: "application/geo+json"
-        }, {
-            href: baseURL + "/collections/traveladvisories.gpkg",
-            rel: "enclosure",
-            type: "application/geopackage+sqlite3",
-            title: "Bulk download all incidents(GeoPackage)",
-            length: "TBD"
-        }
-    ];
+    const links = await genLinks4collections('traveladvisories');
+
     const traveladvisoriesMetadata = {
         id: "traveladvisories",
         title: "Travel Adv.",
@@ -297,16 +279,16 @@ async function traveladvisoriesCollection() {
             spatial: {
                 bbox: [
                     [
-                        bboxMinxXcountry[0]["minx"],
-                        bboxMaxxXcountry[0]["maxx"],
-                        bboxMaxyXcountry[0]["maxy"],
-                        bboxMinyXcountry[0]["miny"]
+                        bboxMinxXcountry,
+                        bboxMaxxXcountry,
+                        bboxMaxyXcountry,
+                        bboxMinyXcountry
                     ],
                     [
-                        bboxMinxYcountry[0]["minx"],
-                        bboxMaxxYcountry[0]["maxx"],
-                        bboxMaxyYcountry[0]["maxy"],
-                        bboxMinyYcountry[0]["miny"]
+                        bboxMinxYcountry,
+                        bboxMaxxYcountry,
+                        bboxMaxyYcountry,
+                        bboxMinyYcountry
                         // Targeted Countries BBOX
                     ]
                 ],
@@ -315,8 +297,12 @@ async function traveladvisoriesCollection() {
             temporal: {
                 interval: [
                     [
-                        dateTimeMin[0]["min"],
-                        dateTimeMax[0]["max"]
+                        dateTimeMinIssued[0]["min"],
+                        dateTimeMaxIssued[0]["max"]
+                    ],
+                    [
+                        dateTimeMinLift[0]["min"],
+                        dateTimeMaxLift[0]["max"]
                     ]
                 ],
                 trs: trs
@@ -324,7 +310,7 @@ async function traveladvisoriesCollection() {
         },
         itemType: "feature",
         crs: [
-            "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+            storageCRS
         ],
         storageCrs: storageCRS,
         links: links
@@ -343,28 +329,8 @@ exports.getAllCollections = async function getAllCollections(context) {
         const conflictsMetadata = await conflictsCollection();
         const traveladvisoriesMetadata = await traveladvisoriesCollection();
         const coupsMetadata = await coupsCollection();
-        const mainLinks = [
-            {
-                href: baseURL + "/collections?f=json",
-                rel: "self",
-                type: "application/json",
-                title: "This document"
-            },
-            // Not implemented yet
-            {
-                href: baseURL + "/collections?f=html",
-                rel: "alternate",
-                type: "text/html",
-                title: "Doc as html"
-            },
-            // Export all data. Not implemented yet
-            {
-                "href": baseURL + "/collections/all.gpkg",
-                "rel": "enclosure",
-                "type": "application/geopackage+sqlite3",
-                "title": "Download all data"
-            }
-        ];
+        const mainLinks = await genMainLinks();
+
         const collections = {
             title: "Available datasets",
             links: mainLinks,
