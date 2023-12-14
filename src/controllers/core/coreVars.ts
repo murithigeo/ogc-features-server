@@ -1,8 +1,5 @@
-import { QueryTypes } from "sequelize";
-import * as db from "../../models";
-
 export const storageCRS: Array<string> = [
-    "https://www.opengis.net/def/crs/OGC/1.3/CRS84",
+    "http://www.opengis.net/def/crs/OGC/1.3/CRS84",
     "http://www.opengis.net/def/crs/EPSG/0/4326"
 ]; //CRS84. Is the default Storage CRS Unless Otherwise Specified
 

@@ -1,6 +1,6 @@
 import { getIPAddress } from "./core/networking";
 import { createServerLinks } from "./core/serverlinking";
-import * as connect from "connect";
+import * as express from "express";
 import * as path from "path";
 import * as http from "http";
 import * as exegesisExpress from "exegesis-express";
@@ -18,27 +18,34 @@ async function createServer() {
         path.resolve(__dirname, './openapi.yaml'),
         options
     );
-    const app = connect();
+    const app = express();
     const accessLogStream = fs.createWriteStream(
         path.join(__dirname, "./logs/reqs.log"),
         { flags: "a" }
     );
     app.use(morgan("combined", { stream: accessLogStream }));
+
+    app.use((req, res, next) => {
+        req.url = decodeURIComponent(req.url);
+        next();
+    });
+
     app.use(exegesisMiddleware);
     const server = http.createServer(app);
     return server;
 }
 
 async function initServer() {
-    const { serverIP, PORT } = await getIPAddress();
+    const { server0, PORT } = await getIPAddress();
     const { baseURL } = await createServerLinks();
     await addServers();
     createServer()
         .then(
             server => {
                 server.listen(PORT);
-                console.log("Server is listening at: http://" + serverIP + ':' + PORT);
-                console.log("To test against OGC Test Suite, paste the following link into TeamEngine:" + baseURL + '/');
+                console.log("Server is listening at: http://" + server0 + ':' + PORT);
+                console.log("To test against OGC Test Suite, paste the following link into TeamEngine: " + baseURL + '/');
+                //console.log("To test against OGC Test Suite, paste the following link into TeamEngine: " + baseURL2 + '/');
                 console.log("View documentation at: " + baseURL + '/api.html');
             }
         ).catch(err => {

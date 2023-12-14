@@ -1,27 +1,21 @@
-import { createServerLinks } from "../core/serverlinking";
-import { validateParams } from "./core/validParamsFun";
+import { defCommonQueryParams } from "./core/commonParams";
+import { genLinks4Conformance } from "./core/linksGen";
+import { validateQueryParams } from "./core/validParamsFun";
 exports.getConformance = async function getConformance(context) {
-    const unexpectedParams = await validateParams(context);
+    const unexpectedParams = await validateQueryParams(context);
     if (unexpectedParams.length > 0) {
         context.res.status(400)
     } else {
-        const { baseURL } = await createServerLinks();
-        let f: string;
-        !context.params.query.f ? f = 'json' : f = context.params.query.f;
+        const { f } = await defCommonQueryParams(context, null, null);
         if (f == 'json') {
             const conformanceDeclaration = {
                 conformsTo: [
                     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
                     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
-                    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson"
+                    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson",
+                    "http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs"
                 ],
-                links: [
-                    {
-                        href: baseURL + '/conformance?f=json',
-                        rel: 'self',
-                        type: 'application/json'
-                    }
-                ]
+                links: await genLinks4Conformance(context)
             };
             context.res.status(200).set('content-type', 'application/json').setBody(conformanceDeclaration);
         }

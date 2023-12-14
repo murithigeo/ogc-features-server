@@ -1,9 +1,9 @@
 import { QueryTypes } from "sequelize";
 import * as db from "../models";
-import { validateParams } from "./core/validParamsFun";
+import { validateQueryParams } from "./core/validParamsFun";
 
 exports.getpostgisVersion = async function getpostgisVersion(context) {
-    const unexpectedParams = await validateParams(context);
+    const unexpectedParams = await validateQueryParams(context);
     if (unexpectedParams.length > 0) {
         context.res.status(400)
     } else {

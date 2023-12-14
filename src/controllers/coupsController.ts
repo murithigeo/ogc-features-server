@@ -2,10 +2,10 @@ import * as sequelize from 'sequelize';
 import * as models from '../models';
 const { level0 } = require('../models');
 const Coups = models.coups;
-import { validateParams } from './core/validParamsFun';
-import calcPaging from './core/paging';
+import { validateQueryParams } from './core/validParamsFun';
+import { calcPaging } from './core/paging';
 const { Op } = require('sequelize');
-import { verifyCRS } from './core/validateCRS';
+import { verify_use_CRS } from './core/CRS';
 import { genLinks4featurecollection } from './core/linksGen';
 import { createFCobject } from './core/makeFCobject';
 
@@ -32,7 +32,7 @@ const attributes_l0 = {
     }
 };
 exports.getAllCoups = async function getAllCoups(context) {
-    const unexpectedParams = await validateParams(context);
+    const unexpectedParams = await validateQueryParams(context);
     if (unexpectedParams.length > 0) {
         context.res.status(400)
     } else {
@@ -82,16 +82,13 @@ exports.getAllCoups = async function getAllCoups(context) {
         let crs: string;
         context.params.query.crs === undefined || context.params.query === "https://www.opengis.net/def/crs/OGC/1.3/CRS84" ? crs = "http://www.opengis.net/def/crs/EPSG/0/4326" : crs = context.params.query.crs;
 
-        const columnDetails = await customColumnDetails(crs)
-        const validCRS = await verifyCRS(crs);
-        const validbboxCRS = await verifyCRS(bboxCrs);
 
-        if (!validCRS || validCRS.length < 1 || validbboxCRS.length < 1) {
+        if ((await verify_use_CRS(crs)).length < 1 || (await verify_use_CRS(crs)).length < 1) {
             context.res.status(400).setBody({ message: "invalid crs" })
         } else {
             try {
                 const { count, rows } = await Coups.findAndCountAll({
-                    attributes: columnDetails,
+                    attributes: await customColumnDetails(crs),
                     include: [attributes_l0],
                     where: {
                         [Op.and]: [
@@ -108,8 +105,8 @@ exports.getAllCoups = async function getAllCoups(context) {
                     offset: offset,
                     raw: true
                 });
-                const { nextPageOffset, prevPageOffset } = calcPaging(count, limit, offset);
-                const links = await genLinks4featurecollection(collectionId, prevPageOffset, nextPageOffset, limit);
+                const { nextPageOffset, prevPageOffset } = await calcPaging(count, limit, offset);
+                const links = await genLinks4featurecollection(collectionId, prevPageOffset, nextPageOffset, limit, context);
 
                 //Create geoJSON
                 async function makeGeoJSON() {
@@ -158,8 +155,8 @@ exports.getAllCoups = async function getAllCoups(context) {
                         //return featuresArray;
                         context.res
                             .status(200)
-                            .set('content-crs',crs)
-                            .set('content-type','application/json')
+                            .set('content-crs', crs)
+                            .set('content-type', 'application/json')
                             //.set('content-type','application/geo+json')
                             .setBody(featurecollection)
                     }

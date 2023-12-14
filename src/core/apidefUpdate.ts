@@ -2,18 +2,24 @@ import * as jsYAML from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createServerLinks } from './serverlinking';
-import * as models from '../models';
-import { getCRSArray } from '../controllers/core/validateCRS';
+import { getCRSArray } from '../controllers/core/CRS';
 
 export async function addServers() {
     const { baseURL } = await createServerLinks();
     const editDocument = fs.readFileSync(path.resolve(__dirname, '../openapi-editable.yaml'), 'utf-8');
     const parsedYAML = jsYAML.load(editDocument);
+    
     parsedYAML.servers = [
         {
             url: baseURL,
-            description: "serveraddress ;serverIP || localhost"
+            description: "If 1**.***.***.*** is not working, then it is localhost"
+        },
+        /*
+        {
+            url: baseURL2,
+            description: "Server will always be available at this address"
         }
+        */
     ];
 
     const CRSArray = await getCRSArray();

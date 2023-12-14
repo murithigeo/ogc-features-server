@@ -10,7 +10,8 @@ export async function getIPAddress() {
             }
         });
     }
-    const serverIP = ips === 0 ? 'localhost' : ips;
+    const server0 = ips === 0 ? 'localhost' : ips;
+//    const server1 = 'localhost';
     const PORT = process.env.PORT || 80;
-    return { serverIP, PORT };
+    return { server0, PORT };
 }

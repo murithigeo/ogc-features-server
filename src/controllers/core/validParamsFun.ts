@@ -1,6 +1,6 @@
 import * as queryString from "querystring";
 
-export async function validateParams(obj) {
+export async function validateQueryParams(obj) {
     const allowedParams = [];
     if (Object.keys(obj.params.query).length > 0) {
         allowedParams.push(...Object.keys(obj.params.query));

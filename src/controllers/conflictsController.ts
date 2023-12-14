@@ -1,6 +1,6 @@
 import * as sequelize from 'sequelize';
 import { createServerLinks } from '../core/serverlinking';
-import { validateParams } from './core/validParamsFun';
+import {  validateQueryParams } from './core/validParamsFun';
 const { level0 } = require('../models');
 const { Op } = require('sequelize');
 const Conflicts = require('../models').conflicts;
@@ -28,7 +28,7 @@ const attributes_l0 = {
 };
 
 exports.getAllConflicts = async function getAllConflicts(context) {
-    const unexpectedParams = await validateParams(context);
+    const unexpectedParams = await validateQueryParams(context);
     if (unexpectedParams.length > 0) {
         context.res.status(400);
     } else {

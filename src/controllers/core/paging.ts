@@ -1,5 +1,5 @@
 // Function to calculate paging offsets
-export default function calcPaging(count: number, limit: number, offset: number) {
+export  async function calcPaging(count: number, limit: number, offset: number) {
 
     const maxOffset = Math.max(count - limit, 0);
 

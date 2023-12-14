@@ -11,15 +11,15 @@ import * as models from '../models';
  * This file imports the required models for the incidents controller.
  * The imported models are level0, level1, level2, level3, level4, level5, goi, and conflicts.
  */
-
+import { defCommonQueryParams } from './core/commonParams';
 const { level0, level1, level2, level3, level4, level5, goi, conflicts } = require('../models');
 const Incidents = models.incidents;
 const { Op } = require('sequelize');
-import { createServerLinks } from '../core/serverlinking';
-import { validateParams } from './core/validParamsFun';
+//import { createServerLinks } from '../core/serverlinking';
+import { validateQueryParams } from './core/validParamsFun';
 import { genLinks4feature, genLinks4featurecollection } from './core/linksGen';
-import calcPaging from './core/paging';
-import { verifyCRS } from './core/validateCRS';
+import { calcPaging } from './core/paging';
+import { verify_use_CRS } from './core/CRS';
 import { createFCobject } from './core/makeFCobject';
 /**
  * Retrieves the custom column details for a given CRS.
@@ -35,7 +35,7 @@ async function customColumnDetails(crs: string) {
         'category',
         'locale',
         [
-            sequelize.fn('ST_Transform', sequelize.col('"incidents"."geom"'), parseInt(crs.split('/').pop())), 'geom'
+            sequelize.fn('ST_Transform', sequelize.col('"incidents"."geom"'), (await verify_use_CRS(crs))[0].srid), 'geom'
         ],
         [
             sequelize.col('"level0"."country"'), 'country'
@@ -132,29 +132,15 @@ const attributes_conflicts = {
     }
 };
 
-
 exports.getAllIncidents = async function getAllIncidents(context) {
-
-    const unexpectedParams = await validateParams(context);
+    const unexpectedParams = await validateQueryParams(context);
     if (unexpectedParams.length > 0) {
         context.res.status(400);
     } else {
-        const collectionId = 'incidents';
-        let f: string;
-        let limit: number;
-        let offset: number;
-
-        // Set f='json' by default
-        context.params.query.f === undefined ? f = 'json' : f = context.params.query.f;
-
-        // set offset to 0 by default
-        context.params.query.offset === undefined || context.params.query.offset < 0 ? offset = 0 : offset = context.params.query.offset;
-
-        // set limit to 10 by default
-        context.params.query.limit === undefined ? limit = 10 : limit = context.params.query.limit; // set limit to 10 by default}
+        const { f, offset, limit, admin0, bboxCrs, crs, spatialQueryParamsReplacements, bbox, radius, exceedsExtent, contentCrs } = await defCommonQueryParams(context, sequelize, 'incidents');
 
         // Filter by administrative units from admin0 to admin5
-        const admin0 = context.params.query.admin0 ? { admin0: context.params.query.admin0 } : undefined;
+        //const admin0 = context.params.query.admin0 ? { admin0: context.params.query.admin0 } : undefined; //Is a common param. Moved to defCommonQueryParams function
         const admin1 = context.params.query.admin1 ? { admin1: context.params.query.admin1 } : undefined;
         const admin2 = context.params.query.admin2 ? { admin2: context.params.query.admin2 } : undefined;
         const admin3 = context.params.query.admin3 ? { admin3: context.params.query.admin3 } : undefined;
@@ -167,8 +153,6 @@ exports.getAllIncidents = async function getAllIncidents(context) {
         // Filter by incidentdesc. A more quality algorithm will be implemented
         const incidentdesc = context.params.query.incidentdesc ? { incidentdesc: { [Op.like]: context.params.query.incidentdesc } } : undefined;
 
-        // Filter by radius. radiusDistance is in metres. End user must make their own conversions.
-        const radius = context.params.query.radius ? { radius: sequelize.literal('st_distancesphere("incidents"."geom",st_makepoint(:lon,:lat)) <= :radiusDistance') } : undefined;
 
 
         /**
@@ -190,46 +174,18 @@ exports.getAllIncidents = async function getAllIncidents(context) {
         } : {
             dateoccurence: context.params.query.datetime.split('/')[0]
         } : undefined;
-
-        /**
-         * contains replacements for placeholders in the query
-         * @param bbox - Is a four box array containing values for bbox
-         * @param radius - Is a three box array. Takes in longitude, latitude and radiusDistance in that order  
-         * @bboxCrs - The Coordinate Reference System (CRS) to use. Defaults to EPSG:4326.
-         */
-        let bboxCrs: string;
-        context.params.query['bbox-crs'] === undefined || context.params.query['bbox-crs'] === "https://www.opengis.net/def/crs/OGC/1.3/CRS84" ? bboxCrs = "http://www.opengis.net/def/crs/EPSG/0/4326" : bboxCrs = context.params.query['bbox-crs'];
-        let crs: string;
-        context.params.query.crs === undefined || context.params.query.crs === "https://www.opengis.net/def/crs/OGC/1.3/CRS84" ? crs = "http://www.opengis.net/def/crs/EPSG/0/4326" : crs = context.params.query.crs;
-        const bboxParameters = {
-            minx: (context.params.query.bbox === undefined ? undefined : context.params.query.bbox[0]),
-            maxx: (context.params.query.bbox === undefined ? undefined : context.params.query.bbox[1]),
-            maxy: (context.params.query.bbox === undefined ? undefined : context.params.query.bbox[2]),
-            miny: (context.params.query.bbox === undefined ? undefined : context.params.query.bbox[3]),
-            lon: (context.params.query.radius === undefined ? undefined : context.params.query.radius[0]),
-            lat: (context.params.query.radius === undefined ? undefined : context.params.query.radius[1]),
-            radiusDistance: (context.params.query.radius == undefined ? undefined : context.params.query.radius[2]), // Add a default radius if none is provided
-            bboxSrid: parseInt(bboxCrs.split('/').pop())
-        };
-
-        //Actual bbox filter
-        const bbox = context.params.query.bbox ? {
-            bbox: sequelize.literal('ST_Contains(ST_Transform(ST_MakeEnvelope(:minx, :maxx, :maxy, :miny, :bboxCrs), 4326), "incidents"."geom") is true')
-        } : undefined;
-
-        //Let the user define the crs of the output. Default is 4326
-
-        //console.log(context.params.query.crs)
-        //console.log(context.params.query['bbox-crs'])
-        const columnDetails = await customColumnDetails(crs);
-
-        if ((await verifyCRS(crs)).length < 1 || (await verifyCRS(bboxCrs)).length < 1) {
-            context.res.status(400).setBody({ message: 'Invalid CRS. Please use a valid CRS' });
+        //console.log(crs, spatialQueryParamsReplacements)
+        if ((await verify_use_CRS(crs)).length < 1 || (await verify_use_CRS(bboxCrs)).length < 1  /* || exceedsExtent == true */) {
+            //console.log(exceedsExtent);
+            context.res.status(400).setBody({ message: 'Possible Reasons for Error: \n 1. Incorrect CRS \n 2. Incorrect bbox-crs \n 3. bbox is outside the extent' });
         } else {
+            //console.log(exceedsExtent);
             try {
+                //console.log(crs, f, offset, limit, admin0, bboxCrs, spatialQueryParamsReplacements, bbox, radius, dateoccurence, incidentdesc, admin1, admin2, admin3, admin4, admin5, category)
+
                 // Query the database
                 const { count, rows } = await Incidents.findAndCountAll({
-                    attributes: columnDetails,
+                    attributes: await customColumnDetails(crs),
                     include: [
                         attributes_l0,  // Include the attributes from the level0 model
                         attributes_l1,  // Include the attributes from the level1 model
@@ -265,18 +221,17 @@ exports.getAllIncidents = async function getAllIncidents(context) {
                         ['incidentid', 'ASC'] // Order by incidentid in ascending order. Enables constistent offset
                     ],
                     includeIgnoreAttributes: false, // Disables the generation of non-existent fields referring to foreign keys
-                    replacements: bboxParameters,
+                    replacements: spatialQueryParamsReplacements,
                     limit: limit, // Filters number of results returned to user
                     offset: offset, // Enables pagination
                     raw: true
                 });
-                console.log(count)
-                console.log(rows.length)
+                //console.log(crs, f, offset, limit, admin0, bboxCrs, spatialQueryParamsReplacements, bbox, radius, dateoccurence, incidentdesc, admin1, admin2, admin3, admin4, admin5, category)
                 //offsets
                 const { nextPageOffset, prevPageOffset } = await calcPaging(count, limit, offset);
 
                 //generate links
-                const links = await genLinks4featurecollection(collectionId, prevPageOffset, nextPageOffset, limit);
+                const links = await genLinks4featurecollection('incidents', prevPageOffset, nextPageOffset, limit, context);
 
                 //generate a geojsonFeature/FeatureCollection dependent on a few factors
                 async function makeGeoJSON() {
@@ -352,7 +307,7 @@ exports.getAllIncidents = async function getAllIncidents(context) {
                         const featurecollection = await createFCobject(count, rows.length, featuresArray, links);
                         context.res
                             .status(200)
-                            .set('content-crs', `<${crs}>`)
+                            .set('content-crs', contentCrs)
                             .set('content-type', 'application/geo+json')
                             .set('content-type', 'application/json')
                             .setBody(featurecollection);
@@ -367,26 +322,22 @@ exports.getAllIncidents = async function getAllIncidents(context) {
 }
 
 exports.getOneIncident = async function getOneIncident(context) {
-    const unexpectedParams = await validateParams(context);
+    const unexpectedParams = await validateQueryParams(context);
     if (unexpectedParams.length > 0) {
         context.res.status(400);
     } else {
-
         const incidentid = context.params.path.featureId;
-        let f: string;
-        !context.params.query.f ? f = 'json' : f = context.params.query.f; // Set f='json' by default
+        const { f, crs, contentCrs } = await defCommonQueryParams(context, null, null);
 
-        let crs: string;
-        context.params.query.crs === undefined || context.params.query === "https://www.opengis.net/def/crs/OGC/1.3/CRS84" ? crs = "http://www.opengis.net/def/crs/EPSG/0/4326" : crs = context.params.query.crs;
-
-        const columnDetails = await customColumnDetails(crs);
-        const validCRS = await verifyCRS(crs);
+        //console.log(f)
+        const validCRS = await verify_use_CRS(crs);
         if (!validCRS || validCRS.length < 1) {
-            context.res.status(400).setBody({ message: 'Invalid CRS. Please use a valid CRS' });
+            context.res.status(400)
         } else {
             try {
+
                 const rows = await Incidents.findByPk(incidentid, {
-                    attributes: columnDetails,
+                    attributes: await customColumnDetails(crs),
                     include: [
                         attributes_l0,
                         attributes_l1,
@@ -400,7 +351,7 @@ exports.getOneIncident = async function getOneIncident(context) {
                     includeIgnoreAttributes: false,
                     raw: true
                 });
-                const links = await genLinks4feature('incidents', incidentid);
+                const links = await genLinks4feature('incidents', incidentid, context);
                 async function makeGeoJSON() {
                     if (rows < 1 || !rows) {
                         context.res.status(404);
@@ -430,7 +381,7 @@ exports.getOneIncident = async function getOneIncident(context) {
                         };
                         context.res
                             .status(200)
-                            .set('content-crs', `<${crs}>`)
+                            .set('content-crs', contentCrs)
                             .set('content-type', 'application/json')
                             .set('content-type', 'application/geo+json')
                             .setBody(feature);
