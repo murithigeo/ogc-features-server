@@ -10,6 +10,7 @@
   - [ ] POST
   - [ ] PUT
   - [ ] DELETE
+  - [ ] Fully Typescript Based
 ## Components:
   - Exegesis
       - Functions
