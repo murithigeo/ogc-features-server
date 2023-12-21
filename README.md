@@ -48,5 +48,5 @@
   4. No current aunthetication implementation.
 
 ## Credit
-Zitoun: For starting me on this journey. A comprehensive OAS3 schema of all valid geoJSON geometries and HHTP error codes can be found [here](https://gist.github.com/zit0un/3ac0575eb0f3aabdc645c3faad47ab4a)
+Zitoun: For starting me on this journey. A comprehensive OAS3 schema of all valid geoJSON geometries and HHTP error codes can be found [here](https://gist.github.com/zit0un/3ac0575eb0f3aabdc645c3faad47ab4a)\
 Scalar: A minimum fuss OAS3 Docs Generator. A budding project with [places to go and a modern interface](https://github.com/scalar/scalar)
