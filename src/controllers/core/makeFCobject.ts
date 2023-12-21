@@ -4,6 +4,7 @@ export async function createFCobject(numberMatched: number, numberReturned: numb
         type: 'FeatureCollection',
         numberMatched: numberMatched,
         numberReturned: numberReturned,
+        timeStamp: new Date().toJSON(),
         features: featuresArray,
         links: links
     };

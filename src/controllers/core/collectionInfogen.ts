@@ -38,7 +38,7 @@ export async function generateCollectionInfo(
 
 
 
-    if (collectionId === 'incidents') {
+    if (collectionId === 'incidents'||collectionId==='gtdb') {
         bbox = await db.sequelize.query(`select st_setsrid(st_extent(geom),4326) as bbox from ${collectionId}`, { type: QueryTypes.SELECT });
         bboxArray = await genbboxArray(bbox);
         extent = [bboxArray];
@@ -50,69 +50,6 @@ export async function generateCollectionInfo(
         const dates0 = await genDates4Interval(dateTimeMin, dateTimeMax);
 
         intervalArray = [dates0];
-    } else if (collectionId === "coups") {
-
-        bbox = await db.sequelize.query(`select st_setsrid(st_extent(level0.geom),4326) as bbox from ${collectionId} inner join level0 on ${collectionId}.admin0=level0.admin0`, { type: QueryTypes.SELECT });
-        bboxArray = await genbboxArray(bbox);
-        extent = [bboxArray];
-
-        datetimeColumn = 'dateoccurence';
-        dateTimeMin = await db.sequelize.query(`select MIN(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
-        dateTimeMax = await db.sequelize.query(`select MAX(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
-        intervalArray = await genDates4Interval(dateTimeMin, dateTimeMax);
-
-    } else if (collectionId === "conflicts") {
-        let dateoccurenceMin: any, dateoccurenceMax: any, enddateMin: any, enddateMax: any;
-        bbox = await db.sequelize.query(`select st_setsrid(st_extent(geom),4326) as bbox from ${collectionId} inner join level0 on level0.admin0 = ${collectionId}.admin0;`, { type: QueryTypes.SELECT });
-        bboxArray = await genbboxArray(bbox);
-        bboxArray = [bboxArray];
-
-        datetimeColumn = 'startdate';
-        dateoccurenceMin = await db.sequelize.query(`select MIN(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
-        dateoccurenceMax = await db.sequelize.query(`select MAX(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
-
-        const datesStart = await genDates4Interval(dateoccurenceMin, dateoccurenceMax);
-
-        datetimeColumn = 'enddate';
-        enddateMin = await db.sequelize.query(`select MIN(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
-        enddateMax = await db.sequelize.query(`select MAX(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
-
-        const datesEnd = await genDates4Interval(enddateMin, enddateMax);
-        intervalArray = [datesStart, datesEnd];
-
-    } else if (collectionId === 'goi') {
-        bbox = await db.sequelize.query(`select st_setsrid(st_extent(level0.geom),4326) as bbox from ${collectionId} inner join level0 on ${collectionId}.admin0=level0.admin0`, { type: QueryTypes.SELECT });
-        bboxArray = await genbboxArray(bbox);
-        extent = [bboxArray];
-        intervalArray = [[null, null]];
-    } else if (collectionId === 'traveladvisories') {
-        let bboxX: any,
-            bboxY: any,
-            dateissuedMin: any,
-            dateissuedMax: any,
-            liftdateMin: any,
-            liftdateMax: any;
-
-        bboxX = await db.sequelize.query(`select st_setsrid(st_extent(level0.geom), 4326) as bbox from ${collectionId} inner join level0 on ${collectionId}.xcountry = level0.admin0;`, { type: QueryTypes.SELECT });
-        bboxY = await db.sequelize.query(`select st_setsrid(st_extent(level0.geom), 4326) as bbox from ${collectionId} inner join level0 on ${collectionId}.ycountry = level0.admin0;`, { type: QueryTypes.SELECT });
-
-        bboxX = await genbboxArray(bboxX);
-
-        bboxY = await genbboxArray(bboxY);
-
-        bboxArray = [bboxX, bboxY];
-
-        datetimeColumn = 'dateissued';
-        dateissuedMin = await db.sequelize.query(`select MIN(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
-        dateissuedMax = await db.sequelize.query(`select MAX(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
-        const datesIssued = await genDates4Interval(dateissuedMin, dateissuedMax);
-
-        datetimeColumn = 'liftdate';
-        liftdateMin = await db.sequelize.query(`select MIN(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
-        liftdateMax = await db.sequelize.query(`select MAX(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
-
-        const datesLifted = await genDates4Interval(liftdateMin, liftdateMax);
-        intervalArray = [datesIssued, datesLifted];
     }
     const links = await genLinks4collections(collectionId, obj);
     async function genCRSArray() {

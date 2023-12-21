@@ -24,7 +24,9 @@ export async function addServers() {
 
     const CRSArray = await getCRSArray();
     parsedYAML.components.parameters.crs.schema.enum = CRSArray;
-    parsedYAML.components.parameters['bbox-crs'].schema.enum = CRSArray;
+
+    //Supported bbox-crs found in collection/crs
+    //parsedYAML.components.parameters['bbox-crs'].schema.enum = CRSArray;
     const finalYAML = jsYAML.dump(parsedYAML, { noRefs: true });
     fs.writeFileSync(path.resolve(__dirname, '../openapi.yaml'), finalYAML);
 }

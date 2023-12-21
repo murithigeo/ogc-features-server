@@ -17,7 +17,7 @@ exports.getAllCollections = async function getAllCollections(context) {
         context.res.status(400)
     } else {
         const listAllCRS = false;
-        const incidentsMetadata = await generateCollectionInfo('incidents', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
+        const gtdbMetadata = await generateCollectionInfo('gtdb', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
         //const goiMetadata = await generateCollectionInfo('goi', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
         //const coupsMetadata = await generateCollectionInfo('coups', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
         //const conflictsMetadata = await generateCollectionInfo('conflicts', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
@@ -27,7 +27,8 @@ exports.getAllCollections = async function getAllCollections(context) {
             title: "Available datasets",
             links: await genMainLinks(context),
             collections: [
-                incidentsMetadata,
+                gtdbMetadata
+                //incidentsMetadata,
                 //conflictsMetadata,
                 //coupsMetadata,
                 //goiMetadata,
@@ -49,16 +50,17 @@ exports.getOneCollection = async function getOneCollection(context) {
         const collectionId = context.params.path.collectionId;
         const listAllCRS = true;
         switch (collectionId) {
-            case 'incidents':
-                const incidentsMetadata = await generateCollectionInfo('incidents', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
+            case 'gtdb':
+                const gtdbMetadata = await generateCollectionInfo('gtdb', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
 
                 //console.log(context.params.query);
                 context.res
                     .status(200)
                     .set('content-type', 'application/json')
-                    .setBody(incidentsMetadata);
+                    .setBody(gtdbMetadata);
                 break;
-            case 'goi':
+            /*
+                case 'goi':
                 const goiMetadata = await generateCollectionInfo('goi', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
                 context.res
                     .status(200)
@@ -85,6 +87,7 @@ exports.getOneCollection = async function getOneCollection(context) {
                     .set('content-type', 'application/json')
                     .setBody(coupsMetadata);
                 break;
+                */
         }
     }
 

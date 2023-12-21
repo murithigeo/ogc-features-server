@@ -9,18 +9,18 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
     const f: string = obj.params.query.f === undefined ? 'json' : obj.params.query.f;
     console.log('f', f);
     const offset: number = obj.params.query.offset === undefined || obj.params.query.offset < 0 ? 0 : obj.params.query.offset;
-    const limit: number = obj.params.query.limit === undefined ? 10 : obj.params.query.limit;
+    const limit: number = obj.params.query.limit === undefined ? undefined : obj.params.query.limit;
     const admin0 = obj.params.query.admin0 ? { admin0: obj.params.query.admin0 } : undefined;
 
     //const radius = obj.params.query.radius === undefined ? {radius:sequelize.literal(`st_distancesphere(${collectionid}.)`)
     const bboxCrs = obj.params.query['bbox-crs'] === undefined || obj.params.query['bbox-crs'] === `${storageCRS[0]}` ? "http://www.opengis.net/def/crs/EPSG/0/4326" : obj.params.query['bbox-crs'];
     const crs = obj.params.query.crs === undefined || obj.params.query.crs === `${storageCRS[0]}` ? "http://www.opengis.net/def/crs/EPSG/0/4326" : obj.params.query.crs;
-    const contentCrs = crs === storageCRS[1] || obj.params.query.crs === undefined ? `<${storageCRS[1]}>` : `<${obj.params.query.crs}>`;
+    const contentCrs = obj.params.query.crs === undefined ? `<${storageCRS[0]}>` : `<${obj.params.query.crs}>`
     const spatialQueryParamsReplacements: any = {
         minx: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[0]),
+        miny: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[1]),
         maxx: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[2]),
-        maxy: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[1]),
-        miny: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[3]),
+        maxy: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[3]),
         lon: (obj.params.query.radius === undefined ? undefined : obj.params.query.radius[0]),
         lat: (obj.params.query.radius === undefined ? undefined : obj.params.query.radius[1]),
         bboxSRID: parseInt(bboxCrs.split('/').pop()),
@@ -78,16 +78,26 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
         obj.res.status(400).setBody({ message: 'bbox exceeds extent' }) : undefined;
 */
 
-    let bbox: any;
-    let radius: any;
-    if (collectionId === 'incidents') {
-        bbox = obj.params.query.bbox ? {
-            bbox: ORM.literal('ST_Contains(ST_Transform(ST_MakeEnvelope(:minx, :miny, :maxx, :maxy, :bboxSRID),4326),"incidents"."geom") is true')
-        } : undefined;
+    //let bbox: any;
+    //let radius: any;
 
-        radius = obj.params.query.radius ? {
-            radius: ORM.literal(`ST_DistanceSPhere(geom,(ST_Transform(ST_SetSRID(ST_MakePoint(:lon,:lat),:bboxSRID),4326))) <= radiusDistance`)
-        } : undefined;
+    const radius = obj.params.query.radius ? {
+        radius: ORM.literal(`ST_DistanceSPhere(geom,(ST_Transform(ST_SetSRID(ST_MakePoint(:lon,:lat),:bboxSRID),4326))) <= radiusDistance`)
+    } : undefined;
+
+    const bbox = obj.params.query.bbox ? {
+        bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(:minx, :miny, :maxx, :maxy, :bboxSRID),4326),"gtdb"."geom") is true`)
+    } : undefined;
+
+
+    // Paging (limitting and offsetting)
+    const nextPageOffset = offset + limit;
+    const prevPageOffset = offset > 0 || offset === 0 ? Math.max(offset - limit, 0) : Math.max(offset - limit, 0);
+    /*
+    if (collectionId === 'incidents') {
+        
+
+        
 
     } else if (collectionId === 'goi' || collectionId === 'conflicts' || collectionId === 'coups') {
         bbox = obj.params.query.bbox ? { bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(:minx, :miny, :maxx, :maxy, :bboxSRID),4326),geom) is true`) } : undefined;
@@ -101,6 +111,7 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
             bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(:minx,:miny,:maxx,:maxy,:bboxSRID),4326)),${geomColumn}) is true`)
         } : undefined;
     }
+    */
 
-    return { f, offset, limit, admin0, bboxCrs, crs, spatialQueryParamsReplacements, bbox, radius, exceedsExtent, contentCrs };
+    return { f, offset, limit, admin0, bboxCrs, crs, spatialQueryParamsReplacements, bbox, radius, exceedsExtent, contentCrs, prevPageOffset, nextPageOffset };
 }

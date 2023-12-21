@@ -75,6 +75,7 @@ export async function genLinks4collections(collectionId: string, obj) {
     return links;
 }
 
+
 export async function genMainLinks(obj) {
     const { baseLink } = await genBaseLink(obj);
     const links = [
@@ -124,6 +125,12 @@ export async function genLinks4feature(collectionId: string, featureId: string, 
             href: `${baseLink}/collections/${collectionId}/items?f=json`,
             rel: "items",
             type: "application/json",
+            title: `${collectionId} items`
+        },
+        {
+            href: `${baseLink}/collections/${collectionId}/items?f=json`,
+            rel: "items",
+            type: "application/geo+json",
             title: `${collectionId} items`
         }
     ];
