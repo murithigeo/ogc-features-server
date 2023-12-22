@@ -60,7 +60,7 @@ export async function generateCollectionInfo(
         }
     }
     //genCRSArray();
-    const crs = await genCRSArray();
+    const crs = await genCRSArray(); //Supported CRS
     const metadata = {
         id: collectionId,
         title: `Collection ${collectionId}`,
@@ -68,7 +68,7 @@ export async function generateCollectionInfo(
         extent: {
             spatial: {
                 bbox: extent,
-                crs: storageCRS[0]
+                crs: storageCRS[0] //CRS84
             },
             termporal: {
                 interval: intervalArray,
@@ -77,7 +77,7 @@ export async function generateCollectionInfo(
         },
         itemType: "feature",
         crs: crs,
-        storageCrs: storageCRS[0],
+        storageCrs: storageCRS[0], //CRS84
         storageCrsCoordinateEpoch: storageCrsCoordinateEpoch,
         links: links
     }

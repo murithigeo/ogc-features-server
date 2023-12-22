@@ -6,7 +6,7 @@ import * as http from "http";
 import * as exegesisExpress from "exegesis-express";
 import * as fs from 'fs';
 import * as morgan from "morgan";
-import { addServers } from "./core/apidefUpdate";
+import { updateSpecDoc } from "./core/apidefUpdate";
 
 async function createServer() {
     const options = {
@@ -36,17 +36,17 @@ async function createServer() {
 }
 
 async function initServer() {
-    const { server0, PORT } = await getIPAddress();
-    const { baseURL } = await createServerLinks();
-    await addServers();
+    const { server0, PORT } = await getIPAddress(); //Get the ServerIP and PORT params
+    const { baseURL } = await createServerLinks(); //Get the formed serverUrl
+    await updateSpecDoc(); //
     createServer()
         .then(
             server => {
-                server.listen(PORT);
+                server.listen(PORT); //Alternatively, if you want,you can also listen on the specific IP address.
                 console.log("Server is listening at: http://" + server0 + ':' + PORT);
-                console.log("To test against OGC Test Suite, paste the following link into TeamEngine: " + baseURL + '/');
+                console.log("To test against OGC Test Suite, paste the following link into TeamEngine: " + baseURL + '/'); //landing page
                 //console.log("To test against OGC Test Suite, paste the following link into TeamEngine: " + baseURL2 + '/');
-                console.log("View documentation at: " + baseURL + '/api.html');
+                console.log("View documentation at: " + baseURL + '/api.html'); //api-docs page
             }
         ).catch(err => {
             console.error(err.stack);

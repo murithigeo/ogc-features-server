@@ -6,26 +6,47 @@ import { genbboxArray } from './collectionInfogen';
 import { storageCRS } from "./coreVars";
 
 export async function defCommonQueryParams(obj: any, ORM: any, collectionId: string) {
+    /**
+     * @param f Specifying f overrides the default
+     * @default f='json'
+     * @returns json/html/?
+     */
     const f: string = obj.params.query.f === undefined ? 'json' : obj.params.query.f;
-    console.log('f', f);
-    const offset: number = obj.params.query.offset === undefined || obj.params.query.offset < 0 ? 0 : obj.params.query.offset;
-    const limit: number = obj.params.query.limit === undefined ? undefined : obj.params.query.limit;
-    const admin0 = obj.params.query.admin0 ? { admin0: obj.params.query.admin0 } : undefined;
 
-    //const radius = obj.params.query.radius === undefined ? {radius:sequelize.literal(`st_distancesphere(${collectionid}.)`)
+    /**
+     * @param offset
+     * @default offset=0 Is same as no offset
+     * @override with specifying offset for paging
+     */
+    const offset: number = obj.params.query.offset === undefined || obj.params.query.offset < 0 ? 0 : obj.params.query.offset;
+
+    /**
+     * @param limit
+     * @default 100. Must match OAS3 spec paramSchema
+     * @returns limit
+     */
+    const limit: number = obj.params.query.limit === undefined ? 100 : obj.params.query.limit;
+
+    /**
+     * @description Defines the crs of the supplied bbox. Since the storageCrs is ${storageCrs[0]}, the default bbox-crs is assumed to be storageCrs[1]. Otherwise, overriden by client
+     * @['bbox-crs'] 
+     * @default storageCRS[1]
+     */
     const bboxCrs = obj.params.query['bbox-crs'] === undefined || obj.params.query['bbox-crs'] === `${storageCRS[0]}` ? "http://www.opengis.net/def/crs/EPSG/0/4326" : obj.params.query['bbox-crs'];
+
+    /**
+     * @crs determines outputCrs of features requested.
+     * @default is "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+     */
     const crs = obj.params.query.crs === undefined || obj.params.query.crs === `${storageCRS[0]}` ? "http://www.opengis.net/def/crs/EPSG/0/4326" : obj.params.query.crs;
+
+    /**
+     * @default is <${storageCRS[0]}>
+     * @contentCrs is the header value of returned dataset
+     */
     const contentCrs = obj.params.query.crs === undefined ? `<${storageCRS[0]}>` : `<${obj.params.query.crs}>`
-    const spatialQueryParamsReplacements: any = {
-        minx: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[0]),
-        miny: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[1]),
-        maxx: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[2]),
-        maxy: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[3]),
-        lon: (obj.params.query.radius === undefined ? undefined : obj.params.query.radius[0]),
-        lat: (obj.params.query.radius === undefined ? undefined : obj.params.query.radius[1]),
-        bboxSRID: parseInt(bboxCrs.split('/').pop()),
-        radiusDistance: (obj.params.query.radius === undefined ? undefined : obj.params.query.radius[2])
-    };
+
+
     let exceedsExtent: boolean;
     async function validatebbox(minx: any, miny: number, maxx: number, maxy: number) {
         let extent: Array<any>;
@@ -78,40 +99,87 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
         obj.res.status(400).setBody({ message: 'bbox exceeds extent' }) : undefined;
 */
 
-    //let bbox: any;
-    //let radius: any;
-
+    /**
+     * @radius return features a certain radiusDistance away from [x,y].
+     */
     const radius = obj.params.query.radius ? {
         radius: ORM.literal(`ST_DistanceSPhere(geom,(ST_Transform(ST_SetSRID(ST_MakePoint(:lon,:lat),:bboxSRID),4326))) <= radiusDistance`)
     } : undefined;
 
-    const bbox = obj.params.query.bbox ? {
-        bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(:minx, :miny, :maxx, :maxy, :bboxSRID),4326),"gtdb"."geom") is true`)
+    /**
+     * @link https://github.com/opengeospatial/ets-ogcapi-features10/issues/233#issuecomment-1867426037
+     * @order South(y), west(x), north(y), east(x)
+     * @enum miny, minx,maxy,maxx
+     * @bbox Returns features within a four cornered bbox
+     * @description values & bbox-crs must be transformable to and from storageCRS[1]
+     * @default crs is storageCRS[0]
+     * @EPSG3395 && @EPSG3857 use x,y
+     */
+
+    //let bbox: any;
+    /*
+    bbox = bboxCrs === storageCRS[1] && obj.params.query.bbox ? {
+        bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(${obj.params.query.bbox[0]},${obj.params.query.bbox[1]},${obj.params.query.bbox[2]},${obj.params.query.bbox[3]},${parseInt(bboxCrs.split('/').pop())}),4326),"gtdb"."geom") is true`)
     } : undefined;
 
+    */
+    /*
+    const spatialQueryParamsReplacements: any = {
+        minx: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[0]),
+        miny: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[1]),
+        maxx: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[2]),
+        maxy: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[3]),
+        lon: (obj.params.query.radius === undefined ? undefined : obj.params.query.radius[0]),
+        lat: (obj.params.query.radius === undefined ? undefined : obj.params.query.radius[1]),
+        bboxSRID: parseInt(bboxCrs.split('/').pop()),
+        radiusDistance: (obj.params.query.radius === undefined ? undefined : obj.params.query.radius[2])
+    };
+*/
+//Due to complexity of designing a generic bbox query, a suitable replacement object for sequelize to be used
+    async function genBBOXQuery() {
+        let BBOXQuery: any = {}
+        const bboxSRID = (await verify_use_CRS(bboxCrs))[0].srid;
+        console.log(bboxSRID)
+        if (bboxSRID === 4326) {
+            BBOXQuery = {
+                bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(${obj.params.query.bbox[1]},${obj.params.query.bbox[0]},${obj.params.query.bbox[3]},${obj.params.query.bbox[2]},${bboxSRID}),4326),"gtdb"."geom") is true`)
+            };
+        } else if (bboxSRID == 3395 || bboxSRID == 3857) {
+            BBOXQuery = {
+                bbox: ORM.literal(
+                    `ST_Contains(ST_Transform(ST_MakeEnvelope(${obj.params.query.bbox[0]},${obj.params.query.bbox[1]},${obj.params.query.bbox[2]},${obj.params.query.bbox[3]},${bboxSRID}),4326),"gtdb"."geom") is true`)
+            };
+        }
+
+        return BBOXQuery;
+    }
+    //await genBBOXQuery();
+
+    const bbox = obj.params.query.bbox ? await genBBOXQuery()
+        /*
+        {
+            bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(${obj.params.query.bbox[1]},${obj.params.query.bbox[0]},${obj.params.query.bbox[3]},${obj.params.query.bbox[2]},${parseInt(bboxCrs.split('/').pop())}),4326),"gtdb"."geom") is true`)
+        } 
+        */
+        : undefined;
 
     // Paging (limitting and offsetting)
     const nextPageOffset = offset + limit;
     const prevPageOffset = offset > 0 || offset === 0 ? Math.max(offset - limit, 0) : Math.max(offset - limit, 0);
-    /*
-    if (collectionId === 'incidents') {
-        
 
-        
 
-    } else if (collectionId === 'goi' || collectionId === 'conflicts' || collectionId === 'coups') {
-        bbox = obj.params.query.bbox ? { bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(:minx, :miny, :maxx, :maxy, :bboxSRID),4326),geom) is true`) } : undefined;
-
-        radius = obj.params.query.radius ? { radius: ORM.literal(`ST_DistanceSphere(geom,(ST_SetSRID(ST_MakePoint(:lon,:lat),:bboxSRID),4326)) <= radiusDistance`) } : undefined;
-
-    } else if (collectionId === 'traveladvisories') {
-        const geomColumn = obj.params.query.geomColumn === undefined ? 'xcountryGeom' : obj.params.query.geomColumn;
-
-        bbox = obj.params.query.bbox ? {
-            bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(:minx,:miny,:maxx,:maxy,:bboxSRID),4326)),${geomColumn}) is true`)
-        } : undefined;
-    }
-    */
-
-    return { f, offset, limit, admin0, bboxCrs, crs, spatialQueryParamsReplacements, bbox, radius, exceedsExtent, contentCrs, prevPageOffset, nextPageOffset };
+    return {
+        f,
+        offset,
+        limit,
+        bboxCrs,
+        crs,
+        //spatialQueryParamsReplacements,
+        bbox,
+        radius,
+        exceedsExtent,
+        contentCrs,
+        prevPageOffset,
+        nextPageOffset
+    };
 }

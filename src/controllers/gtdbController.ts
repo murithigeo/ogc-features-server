@@ -7,12 +7,19 @@ import { genLinks4feature, genLinks4featurecollection } from './core/linksGen';
 import { verify_use_CRS } from './core/CRS';
 import { createFCobject } from './core/makeFCobject';
 import { defCommonQueryParams } from './core/commonParams';
-
+import * as fs from 'fs';
+import * as path from 'path';
 async function customColumnDetails(crs: string) {
     const columnDetails = [
         'eventid',
         'dateoccurence',
         'summary',
+        'adm0',
+        'adm1',
+        'adm2',
+        'adm3',
+        'adm4',
+        'adm5',
         [
             sequelize.fn('ST_Transform', sequelize.col('"gtdb"."geom"'), (await verify_use_CRS(crs))[0].srid), 'geom'
         ],
@@ -30,7 +37,9 @@ exports.getAllEvents = async function getAllEvents(context) {
     if ((await validateQueryParams(context)).length > 0) {
         context.res.status(400);
     } else {
-        const { f,prevPageOffset,nextPageOffset, offset, limit, bboxCrs, crs, contentCrs, spatialQueryParamsReplacements, bbox, radius } = await defCommonQueryParams(context, sequelize, 'gtdb');
+        const { f, prevPageOffset, nextPageOffset, offset, limit, bboxCrs, crs, contentCrs, 
+            //spatialQueryParamsReplacements,
+             bbox, radius } = await defCommonQueryParams(context, sequelize, 'gtdb');
         const dateoccurence = context.params.query.datetime ? context.params.query.datetime.split('/').length > 1 ? {
             dateoccurence: {
                 [Op.between]: [
@@ -62,18 +71,28 @@ exports.getAllEvents = async function getAllEvents(context) {
                     },
                     order: [['summary', 'ASC']],
                     includeIgnoreAttributes: false,
-                    replacements: spatialQueryParamsReplacements,
+                    //replacements: spatialQueryParamsReplacements,
                     limit: limit,
                     offset: offset,
                     raw: true
                 });
                 //const { nextPageOffset, prevPageOffset } = await calcPaging(count, limit, offset);
+
+                //
+                //function logToFile(message) {
+                ; // Replace with your desired log file path
+
+                //  fs.appendFileSync('./logs/seq_logs.log', `${message}\n`, 'utf-8');
+                //}
+
+                //logToFile(`TimeNow: ${new Date().toJSON()}    SequelizeQuery: ${JSON.stringify(Gtdb.sequelize?.getQueryInterface()?.QueryGenerator?.selectQuery('Gtdb'))}    Count: ${count} NumberReturned: ${rows.length}`);
+                console.log(`Count is:${count}, numberReturnedis:${rows.length}`);
                 const links = await genLinks4featurecollection('gtdb', prevPageOffset, nextPageOffset, limit, context);
 
                 async function makeGeoJSON() {
                     let featuresArray: Array<any> = [];
                     if (rows.length < 1) {
-                        featuresArray=[];
+                        featuresArray = [];
                     } else {
                         if (rows.length > 1) {
                             featuresArray = rows.map(item => {
@@ -134,15 +153,15 @@ exports.getAllEvents = async function getAllEvents(context) {
                                 }
                             }];
                         }
-                        
+
                     }
                     const featurecollection = await createFCobject(count, rows.length, featuresArray, links);
-                        context.res
-                            .status(200)
-                            .set('content-crs', contentCrs)
-                            .set('content-type', 'application/geo+json')
-                            .set('content-type', 'application/json')
-                            .setBody(featurecollection);
+                    context.res
+                        .status(200)
+                        .set('content-crs', contentCrs)
+                        .set('content-type', 'application/geo+json')
+                        .set('content-type', 'application/json')
+                        .setBody(featurecollection);
                 }
                 await makeGeoJSON();
             } catch (err) {
@@ -205,7 +224,7 @@ exports.getOneEvent = async function getOneEvent(context) {
 }
 
 
-export async function exportEvents(crs: string){
+export async function exportEvents(crs: string) {
     const rows = await Gtdb.findAll({
         attributes: await customColumnDetails(crs),
         where: {

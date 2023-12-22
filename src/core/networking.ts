@@ -1,4 +1,12 @@
+/**
+ * Retrieves the IP address and port number for the server.
+ * 
+ * @returns {server0}An object containing the server IP address and port number.
+ * If the computer is connected to a LAN, then the server0 is the internal IP address of the machine. If airgapped, then address is localhost
+ * @returns {PORT}: Can be defined in env. Otherwise is configurable manually. 80 is used because is default port for HTTP
+ */
 import * as os from "os";
+
 
 export async function getIPAddress() {
     var ifaces = os.networkInterfaces();
