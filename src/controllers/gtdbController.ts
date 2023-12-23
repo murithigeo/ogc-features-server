@@ -9,7 +9,8 @@ import { createFCobject } from './core/makeFCobject';
 import { defCommonQueryParams } from './core/commonParams';
 import * as fs from 'fs';
 import * as path from 'path';
-async function customColumnDetails(crs: string) {
+
+async function customColumnDetails(crsCheck: Array<any>) {
     const columnDetails = [
         'eventid',
         'dateoccurence',
@@ -21,7 +22,7 @@ async function customColumnDetails(crs: string) {
         'adm4',
         'adm5',
         [
-            sequelize.fn('ST_Transform', sequelize.col('"gtdb"."geom"'), (await verify_use_CRS(crs))[0].srid), 'geom'
+            sequelize.fn('ST_Transform', sequelize.col('"gtdb"."geom"'), crsCheck[0].srid), 'geom'
         ],
         [
             sequelize.col('"gtdb"."targtype1_txt"'), 'target'
@@ -37,9 +38,13 @@ exports.getAllEvents = async function getAllEvents(context) {
     if ((await validateQueryParams(context)).length > 0) {
         context.res.status(400);
     } else {
-        const { f, prevPageOffset, nextPageOffset, offset, limit, bboxCrs, crs, contentCrs, 
-            //spatialQueryParamsReplacements,
-             bbox, radius } = await defCommonQueryParams(context, sequelize, 'gtdb');
+        const { f, prevPageOffset,
+            nextPageOffset, offset,
+            limit, bboxCrs,
+            crs, contentCrs,
+            bbox, radius,
+            bboxCrsCheck, crsCheck
+        } = await defCommonQueryParams(context, sequelize, 'gtdb');
         const dateoccurence = context.params.query.datetime ? context.params.query.datetime.split('/').length > 1 ? {
             dateoccurence: {
                 [Op.between]: [
@@ -51,12 +56,12 @@ exports.getAllEvents = async function getAllEvents(context) {
             dateoccurence: context.params.query.datetime.split('/')[0]
         } : undefined;
 
-        if ((await verify_use_CRS(crs)).length < 1 || (await verify_use_CRS(bboxCrs)).length < 1) {
+        if (bboxCrsCheck.length < 1 || crsCheck.length < 1) {
             context.res.status(400).setBody('Invalid CRS');
         } else {
             try {
                 const { count, rows } = await Gtdb.findAndCountAll({
-                    attributes: await customColumnDetails(crs),
+                    attributes: await customColumnDetails(crsCheck),
                     where: {
                         [Op.and]: {
                             geom: {
@@ -86,7 +91,7 @@ exports.getAllEvents = async function getAllEvents(context) {
                 //}
 
                 //logToFile(`TimeNow: ${new Date().toJSON()}    SequelizeQuery: ${JSON.stringify(Gtdb.sequelize?.getQueryInterface()?.QueryGenerator?.selectQuery('Gtdb'))}    Count: ${count} NumberReturned: ${rows.length}`);
-                console.log(`Count is:${count}, numberReturnedis:${rows.length}`);
+                //console.log(`Count is:${count}, numberReturnedis:${rows.length}`);
                 const links = await genLinks4featurecollection('gtdb', prevPageOffset, nextPageOffset, limit, context);
 
                 async function makeGeoJSON() {
@@ -175,58 +180,63 @@ exports.getOneEvent = async function getOneEvent(context) {
     if ((await validateQueryParams(context)).length > 0) {
         context.res.status(400)
     } else {
-        try {
-            const { f, crs, contentCrs } = await defCommonQueryParams(context, sequelize, 'gtdb');
-            const rows = await Gtdb.findByPk(context.params.path.featureId, {
-                attributes: await customColumnDetails(crs),
-                includeIgnoreAttributes: false,
-                raw: true
-            });
-            async function makeGeoJSON() {
-                if (rows.length < 1) {
-                    context.res.status(404).setBody('No features found');
-                } else {
-                    const feature = {
-                        type: 'Feature',
-                        geometry: {
-                            type: rows.geom.type,
-                            coordinates: rows.geom.coordinates
-                        },
-                        id: rows.eventid,
-                        properties: {
-                            dateoccurence: rows.dateoccurence,
-                            summary: rows.summary,
-                            groupname: rows.groupname,
-                            target: rows.target,
-                            adm0: rows.adm0,
-                            adm1: rows.adm1,
-                            adm2: rows.adm2,
-                            adm3: rows.adm3,
-                            adm4: rows.adm4,
-                            adm5: rows.adm5
-                        },
-                        links: await genLinks4feature('gtdb', rows.eventid, context)
-                    };
-                    context.res
-                        .status(200)
-                        .set('content-crs', contentCrs)
-                        .set('content-type', 'application/geo+json')
-                        .set('content-type', 'application/json')
-                        .setBody(feature);
-                }
-            };
-            await makeGeoJSON();
-        } catch (err) {
-            console.log(err);
-            context.res.status(500);
+        const { f, crs, contentCrs, crsCheck } = await defCommonQueryParams(context, sequelize, 'gtdb');
+        if (crsCheck.length < 1) {
+            context.res.status(400).setBody('Invalid CRS');
+        } else {
+            try {
+                const rows = await Gtdb.findByPk(context.params.path.featureId, {
+                    attributes: await customColumnDetails(crs),
+                    includeIgnoreAttributes: false,
+                    raw: true
+                });
+                async function makeGeoJSON() {
+                    if (rows.length < 1) {
+                        context.res.status(404).setBody('No features found');
+                    } else {
+                        const feature = {
+                            type: 'Feature',
+                            geometry: {
+                                type: rows.geom.type,
+                                coordinates: rows.geom.coordinates
+                            },
+                            id: rows.eventid,
+                            properties: {
+                                dateoccurence: rows.dateoccurence,
+                                summary: rows.summary,
+                                groupname: rows.groupname,
+                                target: rows.target,
+                                adm0: rows.adm0,
+                                adm1: rows.adm1,
+                                adm2: rows.adm2,
+                                adm3: rows.adm3,
+                                adm4: rows.adm4,
+                                adm5: rows.adm5
+                            },
+                            links: await genLinks4feature('gtdb', rows.eventid, context)
+                        };
+                        context.res
+                            .status(200)
+                            .set('content-crs', contentCrs)
+                            .set('content-type', 'application/geo+json')
+                            .set('content-type', 'application/json')
+                            .setBody(feature);
+                    }
+                };
+                await makeGeoJSON();
+            } catch (err) {
+                console.log(err);
+                context.res.status(500);
+            }
         }
     }
 }
 
 
-export async function exportEvents(crs: string) {
+export async function exportEvents(context) {
+    const { crsCheck } = await defCommonQueryParams(context, 'null', 'gtdb')
     const rows = await Gtdb.findAll({
-        attributes: await customColumnDetails(crs),
+        attributes: await customColumnDetails(crsCheck),
         where: {
             geom: {
                 [Op.ne]: null
