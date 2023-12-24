@@ -4,20 +4,26 @@ const { QueryTypes } = require('sequelize');
 import * as db from '../../models';
 import { genbboxArray } from './collectionInfogen';
 import { storageCRS } from "./coreVars";
+import { genLinks4featurecollection } from "./linksGen";
 
 export async function defCommonQueryParams(obj: any, ORM: any, collectionId: string) {
+    //To ease enumeration of active query parameters to be used in links, maybe init context.params.query.x yourself
     /**
      * @param f Specifying f overrides the default
      * @default f='json'
      * @returns json/html/?
      */
-    const f: string = obj.params.query.f === undefined ? 'json' : obj.params.query.f;
+    //const f: string = obj.params.query.f === undefined ? 'json' : obj.params.query.f;
+
+    //since exegesis will set json as default, validating f is not necessary
+    const f: string = obj.params.query.f;
 
     /**
      * @param offset
      * @default offset=0 Is same as no offset
      * @override with specifying offset for paging
      */
+
     const offset: number = obj.params.query.offset === undefined || obj.params.query.offset < 0 ? 0 : obj.params.query.offset;
 
     /**
@@ -25,20 +31,20 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
      * @default 100. Must match OAS3 spec paramSchema
      * @returns limit
      */
-    const limit: number = obj.params.query.limit === undefined ? 100 : obj.params.query.limit;
-
+    //    const limit: number = obj.params.query.limit === undefined ? 100 : obj.params.query.limit;
+    const limit: number = obj.params.query.limit;
     /**
      * @description Defines the crs of the supplied bbox. Since the storageCrs is ${storageCrs[0]}, the default bbox-crs is assumed to be storageCrs[1]. Otherwise, overriden by client
      * @['bbox-crs'] 
      * @default storageCRS[1]
      */
-    const bboxCrs = obj.params.query['bbox-crs'] === undefined || obj.params.query['bbox-crs'] === `${storageCRS[0]}` ? "http://www.opengis.net/def/crs/EPSG/0/4326" : obj.params.query['bbox-crs'];
+    const bboxCrs = obj.params.query['bbox-crs'] === undefined ? storageCRS[0] : obj.params.query['bbox-crs'];
 
     /**
      * @crs determines outputCrs of features requested.
      * @default is "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
      */
-    const crs = obj.params.query.crs === undefined || obj.params.query.crs === `${storageCRS[0]}` ? storageCRS[1] : obj.params.query.crs;
+    const crs = obj.params.query.crs === undefined ? storageCRS[0] : obj.params.query.crs;
 
     /**
      * @default is <${storageCRS[0]}>
@@ -116,57 +122,33 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
      * @EPSG3395 && @EPSG3857 use x,y
      */
 
-    //let bbox: any;
-    /*
-    bbox = bboxCrs === storageCRS[1] && obj.params.query.bbox ? {
-        bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(${obj.params.query.bbox[0]},${obj.params.query.bbox[1]},${obj.params.query.bbox[2]},${obj.params.query.bbox[3]},${parseInt(bboxCrs.split('/').pop())}),4326),"gtdb"."geom") is true`)
-    } : undefined;
-
-    */
-    /*
-    const spatialQueryParamsReplacements: any = {
-        minx: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[0]),
-        miny: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[1]),
-        maxx: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[2]),
-        maxy: (obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[3]),
-        lon: (obj.params.query.radius === undefined ? undefined : obj.params.query.radius[0]),
-        lat: (obj.params.query.radius === undefined ? undefined : obj.params.query.radius[1]),
-        bboxSRID: parseInt(bboxCrs.split('/').pop()),
-        radiusDistance: (obj.params.query.radius === undefined ? undefined : obj.params.query.radius[2])
-    };
-*/
     /**
      * @description Due to the axis order of geographic vs projected CRS and OGC requirements, several disambiguations are required.
      * @geographic CRS @extent [miny,minx,maxy,maxx] & coordinates @follow [y,x]
      * @projected CRS @extent [minx,miny,maxx,maxy] & coordinates @follow [x,y]
-     * interestingly, WGS84=EPSG:4326=CRS84
+     * interestingly, WGS84=EPSG:4326=CRS84. Proposal to have an official designation for OGC:CRS84 inside the spatial_ref_sys table to act same as 4326 but for checking of isGeographic
+     * This is because CRS84 complicates which valid order of CRS with projected/geo. coords and is same as 4326 except that PostGIS stores 4326 with x,y
      * @however CRS84 uses [x,y] order while EPSG:4326 uses [y,x] order. PostGIS uses [x,y] order necessitating Flipping coordinates if crs=4326.
      */
 
     /**
      * There is also a need to reduce number of checks for validity of CRS and bbox-crs parameters
-     * Check for crs and bbox-crs validity here
+     * Check for crs and bbox-crs validity here. Assign SRIDs manually since exegesis will enforce bbox & crs enum
+     * This frees up checking for srid from database meaning even CRS84 can return a distinct signature
      */
 
 
     const crsCheck: Array<any> = await verify_use_CRS(crs);
     const bboxCrsCheck: Array<any> = await verify_use_CRS(bboxCrs);
 
-    let isGeographic: boolean;
+
+    //let isGeographic: boolean;
     let flipCoords: boolean;
     let bboxParams: Array<any>;
 
-    if (crs.split('/').pop() === 'CRS84' || bboxCrs.split('/').pop() === 'CRS84') {
-        isGeographic = false;
-    } else
-        if (crsCheck[0].srid >= 4000 && crsCheck[0].srid <= 4999) { //Assumes that geographic CRS are between 4000 and 4999
-            isGeographic = true;
-        } else {
-            isGeographic = false;
-        }
 
-    isGeographic === true ? flipCoords = true : flipCoords = false;
-    isGeographic === true ? bboxParams = [
+    crsCheck[0].isGeographic === true ? flipCoords = true : flipCoords = false;
+    bboxCrsCheck[0].isGeographic === true ? bboxParams = [
         obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[1], //minx
         obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[0], //miny
         obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[3], //maxx
@@ -177,52 +159,20 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
         obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[2], //maxx
         obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[3]]; //maxy
 
-    /*
-//Must find a way to bypass this check for CRS84
-if (crs.split('/').pop() === 'CRS84' || bboxCrs.split('/').pop() === 'CRS84') {
-    flipCoords = false;
-    bboxParams = [
-        obj.params.query.bbox[0], //minx
-        obj.params.query.bbox[1], //miny
-        obj.params.query.bbox[2], //maxx
-        obj.params.query.bbox[3]]; //maxy
-} else if (crsCheck[0].srid >= 4000 && crsCheck[0].srid <= 4999) { //Assumes that geographic CRS are between 4000 and 4999
-    flipCoords = true;
-    bboxParams = [
-        obj.params.query.bbox[1], //minx
-        obj.params.query.bbox[0], //miny
-        obj.params.query.bbox[3], //maxx
-        obj.params.query.bbox[2] //maxy
-    ]
-} else {
-    flipCoords = false;
-    bboxParams = [
-        obj.params.query.bbox[0], //minx
-        obj.params.query.bbox[1], //miny
-        obj.params.query.bbox[2], //maxx
-        obj.params.query.bbox[3] //maxy
-    ];
-}
-*/
-    /**
-     * @description generate a bbox array containing the arrangement of minx,miny,maxx,maxy for each CRS. The array is then used in the query through ...array
-     * 
-     */
-
-
-
+    crsCheck[0].isGeographic === true ? flipCoords = true : flipCoords = false; //flipCoords is used to flip coordinates if crs is geographic
 
 
     const bbox = obj.params.query.bbox ?
         {
-            bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(${bboxParams.join(',')},${parseInt(bboxCrs.split('/').pop())}),4326),"gtdb"."geom") is true`)
+            //bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(${bboxParams.join(',')},${bboxCrsCheck[0].srid}),4326),"gtdb"."geom") is true`)
+            bbox: ORM.literal(`ST_Intersects("gtdb"."geom",ST_Transform(ST_MakeEnvelope(${bboxParams.join(',')},${bboxCrsCheck[0].srid}),4326))`)
         }
         : undefined;
 
-    // Paging (limitting and offsetting)
+    // Paging (limitting and offsetting) 
     const nextPageOffset = offset + limit;
     const prevPageOffset = offset > 0 || offset === 0 ? Math.max(offset - limit, 0) : Math.max(offset - limit, 0);
-
+    //const linksFC = await genLinks4featurecollection('gtdb', prevPageOffset, nextPageOffset, limit, obj);
 
     return {
         f,
@@ -239,6 +189,7 @@ if (crs.split('/').pop() === 'CRS84' || bboxCrs.split('/').pop() === 'CRS84') {
         nextPageOffset,
         bboxCrsCheck,
         crsCheck,
-        flipCoords
+        flipCoords,
+        //  linksFC
     };
 }

@@ -914,7 +914,7 @@ components:
       required: false
       schema:
         type: integer
-        minimum: 1
+        minimum: 10
         maximum: 500
         default: 100
       style: form
@@ -936,6 +936,7 @@ components:
         enum:
           - json
           - html
+        default: json
       style: form
       explode: false
     radius:

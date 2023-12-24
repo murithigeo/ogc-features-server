@@ -1,39 +1,66 @@
+import { storageCRS } from "./coreVars";
 import { genBaseLink } from "./resourceURIgen";
+import { URLSearchParams } from "url";
 
-export async function genLinks4featurecollection(collectionId: string, prevPageOffset: number, nextPageOffset: number, limit: number, obj: any) {
+//handle link gen through commonParams.ts
+export async function genLinks4featurecollection(collectionId: string, prevPageOffset: number, nextPageOffset: number, limit: number, obj: any, offset: number, count: number) {
     const { baseLink } = await genBaseLink(obj);
+    //if f=json then alternate should be f=html and vice versa
+    //enum active params
+    const f = 'json';
+    let hasNextPage: boolean, hasPrevPage: boolean;
+    offset < 1 ? hasPrevPage = false : hasPrevPage = true;
+    count < 1 ? hasNextPage = false : hasNextPage = true;
+
+    let sSideKeys: Array<any> = [];
+    sSideKeys[0] = 'offset';
+
+    /**
+     * Add @crs & @bboxcrs to ignoreKeys array if they are the default. The server assumes that 
+     * in absence of definition, they are CRS84
+     */
+    obj.params.query.crs === storageCRS[0] ? sSideKeys.push('crs') : undefined;
+    obj.params.query['bbox-crs'] === storageCRS[0] ? sSideKeys.push('bbox-crs') : undefined;
+
+    let queryParamString = '';
+    for (const [key, value] of Object.entries(obj.params.query)) {
+        if (value !== undefined && !sSideKeys.includes(key)) {
+            queryParamString += `&${key}=${encodeURIComponent(value as string | number | boolean)}`
+        }
+    }
+    console.log(queryParamString);
     const links: Array<any> = [
         {
             rel: "self",
-            href: `${baseLink}/collections/${collectionId}/items?f=json`,
+            href: `${baseLink}/collections/${collectionId}/items?offset=${offset}` + queryParamString,
             type: "application/geo+json",
             title: "This document as GeoJSON"
         },
         {
             rel: "alternate",
-            href: `${baseLink}/collections/${collectionId}/items?f=html`,
+            href: `${baseLink}/collections/${collectionId}/items?f=html?offset=${offset}` + queryParamString,
             type: "text/html",
             title: "This document as HTML"
         },
         {
             rel: "alternate",
-            href: `${baseLink}/collections/${collectionId}/items?f=json`,
+            href: `${baseLink}/collections/${collectionId}/items?f=json?offset=${offset}` + queryParamString,
             type: "application/json",
             title: "This document as JSON"
-        },
-        {
-            rel: "prev",
-            href: `${baseLink}/collections/${collectionId}/items?f=json&offset=${prevPageOffset}&limit=${limit}`,
-            type: "application/geo+json",
-            title: "The previous page of results"
-        },
-        {
-            rel: "next",
-            href: `${baseLink}/collections/${collectionId}/items?f=json&offset=${nextPageOffset}&limit=${limit}`,
-            type: "application/geo+json",
-            title: "The next page of results"
         }
     ];
+    hasNextPage == true ? links.push({
+        rel: "next",
+        href: `${baseLink}/collections/${collectionId}/items?&offset=${nextPageOffset}` + queryParamString,
+        type: "application/geo+json",
+        title: "The next page of results"
+    }) : links;
+    hasPrevPage == true ? links.push({
+        rel: "prev",
+        href: `${baseLink}/collections/${collectionId}/items?f=json&offset=${prevPageOffset}` + queryParamString,
+        type: "application/geo+json",
+        title: "The previous page of results"
+    }) : links;
     return links;
 }
 
@@ -96,9 +123,18 @@ export async function genMainLinks(obj) {
 }
 export async function genLinks4feature(collectionId: string, featureId: string, obj) {
     const { baseLink } = await genBaseLink(obj);
+    let sSideKeys: Array<string> = [];
+    sSideKeys[0]='f'
+    let queryParamString: string;
+    obj.params.query.crs === storageCRS[0] ? sSideKeys.push('crs') : undefined;
+    for (const [key, value] of Object.entries(obj.params.query)) {
+        if (value!==undefined && !sSideKeys.includes(key)){
+            queryParamString += `&${key}=${encodeURIComponent(value as string | number | boolean)}`
+        }
+    }
     const links: Array<any> = [
         {
-            href: `${baseLink}/collections/${collectionId}/items/${featureId}?f=json`,
+            href: `${baseLink}/collections/${collectionId}/items/${featureId}?f=json`+queryParamString,
             rel: "self",
             type: "application/geo+json",
             title: "This document as GeoJSON"
