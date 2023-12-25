@@ -1,5 +1,5 @@
 import { defCommonQueryParams } from "./core/commonParams";
-import { genLinks4Conformance } from "./core/linksGen";
+import { createLinks4Conformance } from "./core/createLinks";
 import { validateQueryParams } from "./core/validParamsFun";
 exports.getConformance = async function getConformance(context) {
     const unexpectedParams = await validateQueryParams(context);
@@ -15,7 +15,7 @@ exports.getConformance = async function getConformance(context) {
                     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson",
                     "http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs"
                 ],
-                links: await genLinks4Conformance(context)
+                links: await createLinks4Conformance()
             };
             context.res.status(200).set('content-type', 'application/json').setBody(conformanceDeclaration);
         }

@@ -3,8 +3,7 @@ import * as proj4 from 'proj4';
 const { QueryTypes } = require('sequelize');
 import * as db from '../../models';
 import { genbboxArray } from './collectionInfogen';
-import { storageCRS } from "./coreVars";
-import { genLinks4featurecollection } from "./linksGen";
+import { supportedCRS } from "./coreVars";
 
 export async function defCommonQueryParams(obj: any, ORM: any, collectionId: string) {
     //To ease enumeration of active query parameters to be used in links, maybe init context.params.query.x yourself
@@ -38,19 +37,19 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
      * @['bbox-crs'] 
      * @default storageCRS[1]
      */
-    const bboxCrs = obj.params.query['bbox-crs'] === undefined ? storageCRS[0] : obj.params.query['bbox-crs'];
+    const bboxCrs = obj.params.query['bbox-crs'] === undefined ? supportedCRS[0] : obj.params.query['bbox-crs'];
 
     /**
      * @crs determines outputCrs of features requested.
      * @default is "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
      */
-    const crs = obj.params.query.crs === undefined ? storageCRS[0] : obj.params.query.crs;
+    const crs = obj.params.query.crs === undefined ? supportedCRS[0] : obj.params.query.crs;
 
     /**
      * @default is <${storageCRS[0]}>
      * @contentCrs is the header value of returned dataset
      */
-    const contentCrs = obj.params.query.crs === undefined ? `<${storageCRS[0]}>` : `<${obj.params.query.crs}>`
+    const contentCrs = obj.params.query.crs === undefined ? `<${supportedCRS[0]}>` : `<${obj.params.query.crs}>`
 
 
     let exceedsExtent: boolean;
@@ -140,35 +139,35 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
 
     const crsCheck: Array<any> = await verify_use_CRS(crs);
     const bboxCrsCheck: Array<any> = await verify_use_CRS(bboxCrs);
-
-
     //let isGeographic: boolean;
     let flipCoords: boolean;
     let bboxParams: Array<any>;
 
+    crsCheck.length < 1 ?
+        undefined :
+        crsCheck[0].isGeographic === true ?
+            flipCoords = true :
+            flipCoords = false;
+    bboxCrsCheck.length < 1 ?
+        undefined :
+        bboxCrsCheck[0].isGeographic === true ?
+            bboxParams = [
+                obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[1], //minx
+                obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[0], //miny
+                obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[3], //maxx
+                obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[2] //maxy
+            ] : bboxParams = [
+                obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[0], //minx
+                obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[1], //miny
+                obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[2], //maxx
+                obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[3]]; //maxy
 
-    crsCheck[0].isGeographic === true ? flipCoords = true : flipCoords = false;
-    bboxCrsCheck[0].isGeographic === true ? bboxParams = [
-        obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[1], //minx
-        obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[0], //miny
-        obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[3], //maxx
-        obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[2] //maxy
-    ] : bboxParams = [
-        obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[0], //minx
-        obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[1], //miny
-        obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[2], //maxx
-        obj.params.query.bbox === undefined ? undefined : obj.params.query.bbox[3]]; //maxy
+    const bbox = bboxCrsCheck.length < 1 ? undefined : obj.params.query.bbox ? {
+        //bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(${bboxParams.join(',')},${bboxCrsCheck[0].srid}),4326),"gtdb"."geom") is true`)
+        bbox: ORM.literal(`ST_Intersects("gtdb"."geom",ST_Transform(ST_MakeEnvelope(${bboxParams.join(',')},${bboxCrsCheck[0].srid}),4326))`)
+    } : undefined;
 
-    crsCheck[0].isGeographic === true ? flipCoords = true : flipCoords = false; //flipCoords is used to flip coordinates if crs is geographic
-
-
-    const bbox = obj.params.query.bbox ?
-        {
-            //bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(${bboxParams.join(',')},${bboxCrsCheck[0].srid}),4326),"gtdb"."geom") is true`)
-            bbox: ORM.literal(`ST_Intersects("gtdb"."geom",ST_Transform(ST_MakeEnvelope(${bboxParams.join(',')},${bboxCrsCheck[0].srid}),4326))`)
-        }
-        : undefined;
-
+    //const bbox = obj.params.query.bbox : undefined;
     // Paging (limitting and offsetting) 
     const nextPageOffset = offset + limit;
     const prevPageOffset = offset > 0 || offset === 0 ? Math.max(offset - limit, 0) : Math.max(offset - limit, 0);
@@ -190,6 +189,7 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
         bboxCrsCheck,
         crsCheck,
         flipCoords,
+        bboxParams
         //  linksFC
     };
 }

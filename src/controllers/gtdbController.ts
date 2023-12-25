@@ -3,7 +3,7 @@ import * as models from '../models';
 const { Op } = sequelize;
 const Gtdb = models.gtdb;
 import { validateQueryParams } from './core/validParamsFun';
-import { genLinks4feature, genLinks4featurecollection } from './core/linksGen';
+import { createLinks4Feature, createLinks4FeatureCollection } from './core/createLinks';
 import { createFCobject } from './core/makeFCobject';
 import { defCommonQueryParams } from './core/commonParams';
 
@@ -40,7 +40,8 @@ exports.getAllEvents = async function getAllEvents(context) {
             offset,
             limit,
             contentCrs,
-            bbox, radius,
+            bbox, 
+            radius,
             bboxCrsCheck, crsCheck,
             flipCoords, prevPageOffset, nextPageOffset
         } = await defCommonQueryParams(context, sequelize, 'gtdb');
@@ -73,14 +74,14 @@ exports.getAllEvents = async function getAllEvents(context) {
                             ]
                         }
                     },
-                    order: [['adm0', 'ASC']],
+                    order: [['eventid', 'ASC']],
                     includeIgnoreAttributes: false,
                     //replacements: spatialQueryParamsReplacements,
                     limit: limit,
                     offset: offset,
                     raw: true
                 });
-                const links = await genLinks4featurecollection('gtdb', prevPageOffset, nextPageOffset, limit, context, offset, count)
+                const links = await createLinks4FeatureCollection('gtdb', prevPageOffset, nextPageOffset, limit, context, offset, count);
                 async function makeGeoJSON() {
                     let featuresArray: Array<any> = [];
                     if (rows.length < 1) {
@@ -181,7 +182,7 @@ exports.getOneEvent = async function getOneEvent(context) {
                     if (rows.length < 1) {
                         context.res.status(404).setBody('No features found');
                     } else {
-                        console.log(rows)
+                        
                         const feature = {
                             type: 'Feature',
                             geometry: {
@@ -201,7 +202,7 @@ exports.getOneEvent = async function getOneEvent(context) {
                                 adm4: rows.adm4,
                                 adm5: rows.adm5
                             },
-                            links: await genLinks4feature('gtdb', rows.eventid, context)
+                            links: await createLinks4Feature('gtdb', rows.eventid, context)
                         };
                         context.res
                             .status(200)

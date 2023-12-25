@@ -1,19 +1,33 @@
-export const storageCRS: Array<string> = [
-    "http://www.opengis.net/def/crs/OGC/1.3/CRS84",
-    "http://www.opengis.net/def/crs/EPSG/0/4326"
-]; //CRS84. Is the default Storage CRS Unless Otherwise Specified
+import { createServerLinks } from "../../core/serverlinking";
 
-//CRS84. Is the default CRS Used for processing unless otherwise specified in the request
-//export const defaultCRS: string = "http://www.opengis.net/def/crs/OGC/1.3/CRS84";
+//Supported CRS which should appear in the crs key of the /collections request
+export const supportedCRS: Array<string> = [
+    "http://www.opengis.net/def/crs/OGC/1.3/CRS84",
+    "http://www.opengis.net/def/crs/EPSG/0/4326",
+    'http://www.opengis.net/def/crs/EPSG/0/3395',
+    'http://www.opengis.net/def/crs/EPSG/0/3857'
+];
+
+export const storageCRS: string = supportedCRS[0];
 
 //Default temporal reference system.
 export const trs: string = "http://www.opengis.net/def/uom/ISO-8601/0/Gregorian";
-
-//PostGIS version
-//const PostGISVersion = db.sequelize.query("SELECT PostGIS_Version();", { type: QueryTypes.SELECT })["postgis_version"];
 
 //In the future, allow user to specify the CRS and date of data collection
 const PG34rdate: string = "2023-08-23";
 const rdate = new Date(PG34rdate);
 
-export const storageCrsCoordinateEpoch: number = parseFloat((rdate.getFullYear() + ((rdate.getMonth() + 1) - 1) / 12 + (rdate.getDate() - 1) / 365.25).toFixed(2))
+export const storageCrsCoordinateEpoch: number = parseFloat((rdate.getFullYear() + ((rdate.getMonth() + 1) - 1) / 12 + (rdate.getDate() - 1) / 365.25).toFixed(2));
+
+export const SupportedContentTypes: Array<string> = [
+    'application/json',
+    'application/geo+json',
+    'text/html',
+    'application/vnd.oai.openapi+json;version=3.0'
+];
+
+
+export const contentNegotiationVals: Array<string> = [
+    'json',
+    'html'
+];

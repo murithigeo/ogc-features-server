@@ -8,8 +8,8 @@ import * as jsYAML from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createServerLinks } from './serverlinking';
-import { getCRSArray } from '../controllers/core/CRS';
- 
+const {supportedCRS} = require('../controllers/core/coreVars');
+
 export async function updateSpecDoc() {
     const { baseURL } = await createServerLinks();
     const editDocument = fs.readFileSync(path.resolve(__dirname, '../openapi-editable.yaml'), 'utf-8');
@@ -27,11 +27,6 @@ export async function updateSpecDoc() {
         }
         */
     ];
-
-    const CRSArray = await getCRSArray(); //Gets an array of CRS supported by server 
-    parsedYAML.components.parameters.crs.schema.enum = CRSArray;
-    
-    parsedYAML.components.parameters['bbox-crs'].schema.enum = CRSArray; //Due to how queryParams are validated, the CRS[] in the collections response is enumed in crs and bbox-crs params
 
     //These changes to the OAS3 doc are written into the loaded file. This is file used by exegesis
     const finalYAML = jsYAML.dump(parsedYAML, { noRefs: true });

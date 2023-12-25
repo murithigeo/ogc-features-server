@@ -1,6 +1,3 @@
-
-//const ogr2ogr = require('ogr2ogr').default;
-import { verify_use_CRS } from "./core/CRS";
 import { defCommonQueryParams } from "./core/commonParams";
 import { validateQueryParams } from "./core/validParamsFun";
 //import * as ogr2ogr from 'ogr2ogr'.default;

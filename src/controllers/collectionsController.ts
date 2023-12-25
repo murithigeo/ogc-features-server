@@ -2,13 +2,12 @@ import { QueryTypes } from "sequelize";
 import * as db from "../models";
 
 //import the baseURL
-import { createServerLinks } from "../core/serverlinking";
 import { validateQueryParams } from "./core/validParamsFun";
-import { genLinks4collections, genMainLinks } from "./core/linksGen";
+import { createLinks4Collections, createLinks4CollectionDoc } from "./core/createLinks";
 
-import { storageCRS, trs, storageCrsCoordinateEpoch } from "./core/coreVars";
+import { storageCRS, trs, storageCrsCoordinateEpoch, supportedCRS } from "./core/coreVars";
 
-import { getCRSArray } from "./core/CRS";
+//import { getCRSArray } from "./core/CRS";
 import { generateCollectionInfo } from "./core/collectionInfogen";
 
 exports.getAllCollections = async function getAllCollections(context) {
@@ -17,7 +16,7 @@ exports.getAllCollections = async function getAllCollections(context) {
         context.res.status(400)
     } else {
         const listAllCRS = false;
-        const gtdbMetadata = await generateCollectionInfo('gtdb', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
+        const gtdbMetadata = await generateCollectionInfo('gtdb',listAllCRS,context);
         //const goiMetadata = await generateCollectionInfo('goi', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
         //const coupsMetadata = await generateCollectionInfo('coups', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
         //const conflictsMetadata = await generateCollectionInfo('conflicts', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
@@ -25,7 +24,7 @@ exports.getAllCollections = async function getAllCollections(context) {
 
         const collections = {
             title: "Available datasets",
-            links: await genMainLinks(context),
+            links: await createLinks4CollectionDoc(),
             collections: [
                 gtdbMetadata
                 //incidentsMetadata,
@@ -34,7 +33,7 @@ exports.getAllCollections = async function getAllCollections(context) {
                 //goiMetadata,
                 //traveladvisoriesMetadata
             ],
-            crs: await getCRSArray(),
+            crs: supportedCRS,
         };
         context.res
             .status(200)
@@ -51,7 +50,7 @@ exports.getOneCollection = async function getOneCollection(context) {
         const listAllCRS = true;
         switch (collectionId) {
             case 'gtdb':
-                const gtdbMetadata = await generateCollectionInfo('gtdb', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
+                const gtdbMetadata = await generateCollectionInfo('gtdb', listAllCRS, context);
 
                 //console.log(context.params.query);
                 context.res
@@ -59,35 +58,6 @@ exports.getOneCollection = async function getOneCollection(context) {
                     .set('content-type', 'application/json')
                     .setBody(gtdbMetadata);
                 break;
-            /*
-                case 'goi':
-                const goiMetadata = await generateCollectionInfo('goi', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
-                context.res
-                    .status(200)
-                    .set('content-type', 'application/json')
-                    .setBody(goiMetadata);
-                break;
-            case 'conflicts':
-                const conflictsMetadata = await generateCollectionInfo('conflicts', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
-                context.res
-                    .status(200)
-                    .set('content-type', 'application/json')
-                    .setBody(conflictsMetadata);
-                break;
-            case 'traveladvisories':
-                const traveladvisoriesMetadata = await generateCollectionInfo('traveladvisories', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context); context.res
-                    .status(200)
-                    .set('content-type', 'application/json')
-                    .setBody(traveladvisoriesMetadata);
-                break;
-            case 'coups':
-                const coupsMetadata = await generateCollectionInfo('coups', storageCRS, listAllCRS, trs, storageCrsCoordinateEpoch, context);
-                context.res
-                    .status(200)
-                    .set('content-type', 'application/json')
-                    .setBody(coupsMetadata);
-                break;
-                */
         }
     }
 

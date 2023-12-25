@@ -1,10 +1,8 @@
 import { createServerLinks } from '../core/serverlinking';
-import { genBaseLink } from './core/resourceURIgen';
-
 exports.getServiceDoc = async function getServiceDoc(context) {
-    const { baseLink } = await genBaseLink(context);
+    const { baseURL } = await createServerLinks();
 
-    const docURL = baseLink + '/api';
+    const docURL = baseURL + '/api';
     const scalarCode =
         '<!doctype html>' +
         '<html>' +

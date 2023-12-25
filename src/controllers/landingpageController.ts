@@ -1,5 +1,5 @@
-import { genLink4landingPage } from "./core/linksGen";
 import { validateQueryParams } from "./core/validParamsFun";
+import {createLinks4LandingPage} from "./core/createLinks";
 
 exports.getLandingPage = async function getLandingPage(context) {
     const unexpectedParams = await validateQueryParams(context);
@@ -9,7 +9,7 @@ exports.getLandingPage = async function getLandingPage(context) {
         const landingPage = {
             title: "Demo API Backend",
             description: "LAnding Page Document",
-            links: await genLink4landingPage(context)
+            links: await createLinks4LandingPage()
         };
         context.res
             .status(200)
@@ -17,6 +17,4 @@ exports.getLandingPage = async function getLandingPage(context) {
             .setBody(landingPage);
 
     }
-    /*
-            */
 }

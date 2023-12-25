@@ -1,9 +1,7 @@
-//import { genLinks4collections } from "./linksGen";
-//import { storageCRS,trs } from "./coreVars";
+import { storageCrsCoordinateEpoch,storageCRS,trs, supportedCRS} from "./coreVars";
 import db = require("../../models");
 const { QueryTypes } = require("sequelize");
-import { getCRSArray } from "./CRS";
-import { genLinks4collections } from "./linksGen";
+import { createLinks4Collections } from "./createLinks";
 
 export async function genbboxArray(bbox: Array<any>) {
     const bboxMinx: number = bbox[0]["bbox"]["coordinates"][0][0][0];
@@ -22,10 +20,10 @@ export async function genDates4Interval(dateMinUn: Array<any>, dateMaxUn: Array<
 
 export async function generateCollectionInfo(
     collectionId: string,
-    storageCRS: Array<string>,
+    //storageCRS: Array<string>,
     listAllCRS: boolean,
-    trs: string,
-    storageCrsCoordinateEpoch: number,
+    //trs: string,
+    //storageCrsCoordinateEpoch: number,
     obj: any
 ) {
     let dateTimeMin: any,
@@ -36,9 +34,7 @@ export async function generateCollectionInfo(
         extent: Array<any>,
         intervalArray: Array<any>;
 
-
-
-    if (collectionId === 'incidents'||collectionId==='gtdb') {
+    if (collectionId === 'incidents' || collectionId === 'gtdb') {
         bbox = await db.sequelize.query(`select st_setsrid(st_extent(geom),4326) as bbox from ${collectionId}`, { type: QueryTypes.SELECT });
         bboxArray = await genbboxArray(bbox);
         extent = [bboxArray];
@@ -51,16 +47,21 @@ export async function generateCollectionInfo(
 
         intervalArray = [dates0];
     }
-    const links = await genLinks4collections(collectionId, obj);
+    const links = await createLinks4Collections(collectionId);
+    //let supportedCRS: Array<string> = [];
+/*
     async function genCRSArray() {
         if (listAllCRS == true) {
-            return await getCRSArray();
+            return supportedCRS;
         } else {
-            return [...storageCRS]
+            return [
+                '#/crs',
+                storageCRS]
         }
     }
     //genCRSArray();
-    const crs = await genCRSArray(); //Supported CRS
+    //const crs = await genCRSArray(); //Supported CRS
+    */
     const metadata = {
         id: collectionId,
         title: `Collection ${collectionId}`,
@@ -68,7 +69,7 @@ export async function generateCollectionInfo(
         extent: {
             spatial: {
                 bbox: extent,
-                crs: storageCRS[0] //CRS84
+                crs: storageCRS //CRS84
             },
             termporal: {
                 interval: intervalArray,
@@ -76,8 +77,8 @@ export async function generateCollectionInfo(
             }
         },
         itemType: "feature",
-        crs: crs,
-        storageCrs: storageCRS[0], //CRS84
+        crs: supportedCRS,
+        storageCrs: storageCRS, //CRS84
         storageCrsCoordinateEpoch: storageCrsCoordinateEpoch,
         links: links
     }
