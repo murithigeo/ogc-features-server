@@ -51,7 +51,7 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
      */
     const contentCrs = obj.params.query.crs === undefined ? `<${supportedCRS[0]}>` : `<${obj.params.query.crs}>`
 
-
+    //const datetime =
     let exceedsExtent: boolean;
     async function validatebbox(minx: any, miny: number, maxx: number, maxy: number) {
         let extent: Array<any>;
@@ -167,11 +167,6 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
         bbox: ORM.literal(`ST_Intersects("gtdb"."geom",ST_Transform(ST_MakeEnvelope(${bboxParams.join(',')},${bboxCrsCheck[0].srid}),4326))`)
     } : undefined;
 
-    //const bbox = obj.params.query.bbox : undefined;
-    // Paging (limitting and offsetting) 
-    const nextPageOffset = offset + limit;
-    const prevPageOffset = offset > 0 || offset === 0 ? Math.max(offset - limit, 0) : Math.max(offset - limit, 0);
-    //const linksFC = await genLinks4featurecollection('gtdb', prevPageOffset, nextPageOffset, limit, obj);
 
     return {
         f,
@@ -184,12 +179,17 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
         radius,
         exceedsExtent,
         contentCrs,
-        prevPageOffset,
-        nextPageOffset,
         bboxCrsCheck,
         crsCheck,
         flipCoords,
         bboxParams
         //  linksFC
     };
+}
+
+export async function pagingDef(count: number, offset: number, limit: number) {
+    const nextPageOffset: number = offset + limit;
+    const prevPageOffset: number = offset - limit;
+    const numberMatched: number = count - offset;
+    return { nextPageOffset, prevPageOffset, numberMatched }
 }

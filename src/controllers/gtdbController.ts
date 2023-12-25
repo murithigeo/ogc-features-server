@@ -5,7 +5,7 @@ const Gtdb = models.gtdb;
 import { validateQueryParams } from './core/validParamsFun';
 import { createLinks4Feature, createLinks4FeatureCollection } from './core/createLinks';
 import { createFCobject } from './core/makeFCobject';
-import { defCommonQueryParams } from './core/commonParams';
+import { defCommonQueryParams, pagingDef } from './core/commonParams';
 
 async function customColumnDetails(crsCheck: Array<any>, flipCoords: boolean) {
     const transformQuery = flipCoords === false ?
@@ -40,10 +40,10 @@ exports.getAllEvents = async function getAllEvents(context) {
             offset,
             limit,
             contentCrs,
-            bbox, 
+            bbox,
             radius,
             bboxCrsCheck, crsCheck,
-            flipCoords, prevPageOffset, nextPageOffset
+            flipCoords,
         } = await defCommonQueryParams(context, sequelize, 'gtdb');
         const dateoccurence = context.params.query.datetime ? context.params.query.datetime.split('/').length > 1 ? {
             dateoccurence: {
@@ -81,7 +81,8 @@ exports.getAllEvents = async function getAllEvents(context) {
                     offset: offset,
                     raw: true
                 });
-                const links = await createLinks4FeatureCollection('gtdb', prevPageOffset, nextPageOffset, limit, context, offset, count);
+                const { numberMatched, nextPageOffset, prevPageOffset } = await pagingDef(count, offset, limit);
+                const links = await createLinks4FeatureCollection('gtdb', context, offset, numberMatched, prevPageOffset, nextPageOffset);
                 async function makeGeoJSON() {
                     let featuresArray: Array<any> = [];
                     if (rows.length < 1) {
@@ -148,7 +149,7 @@ exports.getAllEvents = async function getAllEvents(context) {
                         }
 
                     }
-                    const featurecollection = await createFCobject(count, rows.length, featuresArray, links);
+                    const featurecollection = await createFCobject(count - offset, rows.length, featuresArray, links);
                     context.res
                         .status(200)
                         .set('content-crs', contentCrs)
@@ -182,7 +183,7 @@ exports.getOneEvent = async function getOneEvent(context) {
                     if (rows.length < 1) {
                         context.res.status(404).setBody('No features found');
                     } else {
-                        
+
                         const feature = {
                             type: 'Feature',
                             geometry: {

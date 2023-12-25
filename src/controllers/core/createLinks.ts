@@ -14,21 +14,23 @@ async function detLinks(
 
     return { selfConType, altConType, selfF, alternateF }
 }
-//handle link gen through commonParams.ts
-export async function createLinks4FeatureCollection(collectionId: string, prevPageOffset: number, nextPageOffset: number, limit: number, obj: any, offset: number, count: number) {
+
+export async function createLinks4FeatureCollection(collectionId: string, obj: any, offset: number,numberMatched:number,prevPageOffset:number, nextPageOffset:number) {
     const { baseURL } = await createServerLinks();
 
     const { selfConType, altConType, selfF, alternateF } = await detLinks(obj,
-        SupportedContentTypes[1],
+        SupportedContentTypes[1], //
         SupportedContentTypes[2],
         contentNegotiationVals[0],
         contentNegotiationVals[1]);
 
+
+
     let hasNextPage: boolean, hasPrevPage: boolean;
     offset < 1 ? hasPrevPage = false : hasPrevPage = true;
-    count < 1||count==1 ? hasNextPage = false : hasNextPage = true;
+    numberMatched < 1 || numberMatched == 1 ? hasNextPage = false : hasNextPage = true;
 
-    let sSideKeys: Array<any> = [];
+    let sSideKeys: Array<string> = [];
     sSideKeys[0] = 'offset'
     sSideKeys[1] = 'f';
 
