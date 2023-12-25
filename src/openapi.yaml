@@ -902,7 +902,11 @@ components:
         the extent or all relevant temporal properties.
 
 
-        Will query the dateoccurence field
+        The only currently supported intervals are those provided as an example.
+        If they 
+
+        do not `..` for unbounded or / for bounded intervals, `error(500)` `as
+        of now`
       required: false
       schema:
         type: string

@@ -4,7 +4,7 @@ const { Op } = sequelize;
 const Gtdb = models.gtdb;
 import { validateQueryParams } from './core/validParamsFun';
 import { createLinks4Feature, createLinks4FeatureCollection } from './core/createLinks';
-import { createFCobject } from './core/makeFCobject';
+import { createFeatureCollection } from './core/createFeatureCollection';
 import { defCommonQueryParams, pagingDef } from './core/commonParams';
 
 async function customColumnDetails(crsCheck: Array<any>, flipCoords: boolean) {
@@ -37,6 +37,7 @@ exports.getAllEvents = async function getAllEvents(context) {
         context.res.status(400);
     } else {
         const { f,
+            datetime,
             offset,
             limit,
             contentCrs,
@@ -45,22 +46,12 @@ exports.getAllEvents = async function getAllEvents(context) {
             bboxCrsCheck, crsCheck,
             flipCoords,
         } = await defCommonQueryParams(context, sequelize, 'gtdb');
-        const dateoccurence = context.params.query.datetime ? context.params.query.datetime.split('/').length > 1 ? {
-            dateoccurence: {
-                [Op.between]: [
-                    context.params.query.datetime.split('/')[0],
-                    context.params.query.datetime.split('/')[1]
-                ]
-            }
-        } : {
-            dateoccurence: context.params.query.datetime.split('/')[0]
-        } : undefined;
 
         if (bboxCrsCheck.length < 1 || crsCheck.length < 1) {
             context.res.status(400).setBody('Invalid CRS');
         } else {
             try {
-                const { count, rows } = await Gtdb.findAndCountAll({
+                                const { count, rows } = await Gtdb.findAndCountAll({
                     attributes: await customColumnDetails(crsCheck, flipCoords),
                     where: {
                         [Op.and]: {
@@ -69,7 +60,7 @@ exports.getAllEvents = async function getAllEvents(context) {
                             },
                             [Op.and]: [
                                 bbox,
-                                dateoccurence,
+                                datetime,
                                 radius
                             ]
                         }
@@ -149,7 +140,7 @@ exports.getAllEvents = async function getAllEvents(context) {
                         }
 
                     }
-                    const featurecollection = await createFCobject(count - offset, rows.length, featuresArray, links);
+                    const featurecollection = await createFeatureCollection(count, rows.length, featuresArray, links);
                     context.res
                         .status(200)
                         .set('content-crs', contentCrs)

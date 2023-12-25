@@ -1,7 +1,5 @@
 # OGC API - Features v1.7 NodeJS Based Server.
 ## Project Checklist
-  - [x] bbox 
-  - [x] bbox-crs
   - [x] crs
   - [ ] Security/aunthetication
   - [ ] offset/limit (Partial)

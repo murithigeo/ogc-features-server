@@ -1,6 +1,6 @@
 
-export async function createFCobject(numberMatched: number, //minus offset
-     numberReturned: number,featuresArray:Array<any>,links:Array<any>) {
+export async function createFeatureCollection(numberMatched: number, //minus offset
+     numberReturned: number,featuresArray:Array<object>,links:Array<object>) {
     const featurecollection = {
         type: 'FeatureCollection',
         numberMatched: numberMatched,

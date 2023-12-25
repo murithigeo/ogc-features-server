@@ -8,7 +8,7 @@ import { createLinks4Collections, createLinks4CollectionDoc } from "./core/creat
 import { storageCRS, trs, storageCrsCoordinateEpoch, supportedCRS } from "./core/coreVars";
 
 //import { getCRSArray } from "./core/CRS";
-import { generateCollectionInfo } from "./core/collectionInfogen";
+import { generateCollectionInfo } from "./core/createCollectionInfo";
 
 exports.getAllCollections = async function getAllCollections(context) {
     const unexpectedParams = await validateQueryParams(context);

@@ -15,7 +15,7 @@ async function detLinks(
     return { selfConType, altConType, selfF, alternateF }
 }
 
-export async function createLinks4FeatureCollection(collectionId: string, obj: any, offset: number,numberMatched:number,prevPageOffset:number, nextPageOffset:number) {
+export async function createLinks4FeatureCollection(collectionId: string, obj: any, offset: number, numberMatched: number, prevPageOffset: number, nextPageOffset: number) {
     const { baseURL } = await createServerLinks();
 
     const { selfConType, altConType, selfF, alternateF } = await detLinks(obj,
@@ -27,7 +27,7 @@ export async function createLinks4FeatureCollection(collectionId: string, obj: a
 
 
     let hasNextPage: boolean, hasPrevPage: boolean;
-    offset < 1 ? hasPrevPage = false : hasPrevPage = true;
+    offset < 1 || numberMatched == 0 ? hasPrevPage = false : hasPrevPage = true;
     numberMatched < 1 || numberMatched == 1 ? hasNextPage = false : hasNextPage = true;
 
     let sSideKeys: Array<string> = [];

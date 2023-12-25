@@ -2,8 +2,9 @@ import { verify_use_CRS } from "./CRS";
 import * as proj4 from 'proj4';
 const { QueryTypes } = require('sequelize');
 import * as db from '../../models';
-import { genbboxArray } from './collectionInfogen';
+import { genbboxArray } from './createCollectionInfo';
 import { supportedCRS } from "./coreVars";
+import { Op } from "sequelize";
 
 export async function defCommonQueryParams(obj: any, ORM: any, collectionId: string) {
     //To ease enumeration of active query parameters to be used in links, maybe init context.params.query.x yourself
@@ -97,13 +98,6 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
         return exceedsExtent;
     }
 
-    //obj.params.query.bbox === undefined ? undefined : exceedsExtent = await validatebbox(obj.params.query.bbox[0], obj.params.query.bbox[1], obj.params.query.bbox[2], obj.params.query.bbox[3]);
-    /*
-    obj.params.query.bbox !== undefined &&
-        (await validatebbox(obj.params.query.bbox[0], obj.params.query.bbox[1], obj.params.query.bbox[2], obj.params.query.bbox[3])) == true ?
-        obj.res.status(400).setBody({ message: 'bbox exceeds extent' }) : undefined;
-*/
-
     /**
      * @radius return features a certain radiusDistance away from [x,y].
      */
@@ -167,6 +161,73 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
         bbox: ORM.literal(`ST_Intersects("gtdb"."geom",ST_Transform(ST_MakeEnvelope(${bboxParams.join(',')},${bboxCrsCheck[0].srid}),4326))`)
     } : undefined;
 
+    //datetime processing
+    let dateObject = {
+        startDate: undefined,
+        endDate: undefined,
+        date: undefined
+    };
+
+    async function processDatetime(datetime: string) {
+
+        // Decode the URL-encoded datetime string
+        const decodedDatetime = decodeURIComponent(datetime);
+
+        const matchInterval = decodedDatetime.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)/);
+        const matchHalfBoundedStart = decodedDatetime.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\/../);
+        const matchHalfBoundedEnd = decodedDatetime.match(/..\/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)/);
+
+        if (matchInterval) {
+            // interval-bounded
+            dateObject.startDate = matchInterval[1];
+            dateObject.endDate = matchInterval[2];
+        } else if (matchHalfBoundedStart) {
+            // interval-half-bounded-start
+            dateObject.startDate = matchHalfBoundedStart[1];
+        } else if (matchHalfBoundedEnd) {
+            // interval-half-bounded-end
+            dateObject.endDate = matchHalfBoundedEnd[1];
+        } else {
+            // single date
+            dateObject.date = decodedDatetime;
+        }
+
+        //console.log(dateObject)
+        return dateObject;
+    }
+    obj.params.query.datetime !== undefined ? dateObject = await processDatetime(obj.params.query.datetime)
+        : undefined;
+
+    /*
+        const dateoccurence = context.params.query.datetime ? context.params.query.datetime.split('/').length > 1 ? {
+            dateoccurence: {
+                [Op.between]: [
+                    context.params.query.datetime.split('/')[0],
+                    context.params.query.datetime.split('/')[1]
+                ]
+            }
+        } : {
+            dateoccurence: context.params.query.datetime.split('/')[0]
+        } : undefined;
+    */
+    const datetime = obj.params.query.datetime ?
+        dateObject.startDate !== undefined && dateObject.endDate !== undefined ?
+            {
+                dateoccurence: {
+                    [Op.between]: [
+                        dateObject.startDate, dateObject.endDate
+                    ]
+                }
+            } : dateObject.endDate !== undefined && dateObject.startDate === undefined ? {
+                dateoccurence: {
+                    [Op.lte]: dateObject.endDate
+                }
+            } : dateObject.startDate !== undefined && dateObject.endDate === undefined ?
+                {
+                    dateoccurence: {
+                        [Op.gte]: dateObject.startDate
+                    }
+                } : { dateoccurence: dateObject.date } : undefined;
 
     return {
         f,
@@ -182,7 +243,8 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
         bboxCrsCheck,
         crsCheck,
         flipCoords,
-        bboxParams
+        bboxParams,
+        datetime
         //  linksFC
     };
 }
@@ -190,6 +252,8 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
 export async function pagingDef(count: number, offset: number, limit: number) {
     const nextPageOffset: number = offset + limit;
     const prevPageOffset: number = offset - limit;
-    const numberMatched: number = count - offset;
+    const allowedNumMatched: number = count - offset;
+    let numberMatched: number;
+    allowedNumMatched < 0 ? numberMatched = 0 : numberMatched = allowedNumMatched;
     return { nextPageOffset, prevPageOffset, numberMatched }
 }
