@@ -1,7 +1,7 @@
 import { verify_use_CRS } from "./CRS";
 import * as proj4 from 'proj4';
 const { QueryTypes } = require('sequelize');
-import * as db from '../../models';
+import db from '../../models';
 import { genbboxArray } from './createCollectionInfo';
 import { supportedCRS } from "./coreVars";
 import { Op } from "sequelize";
@@ -250,10 +250,34 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
 }
 
 export async function pagingDef(count: number, offset: number, limit: number) {
+    /**
+     * @numberReturned is the total number of features returned to
+     * server. Eg. if limit=10 and offset0=0, offset1=10, then numberReturned=20
+     */
+    let numberReturned: number = 0;
+    //numberReturned += limit//Math.min(limit, count - offset);
+    const startIndex=Math.min(offset, count);
+    const endIndex=Math.min(startIndex+limit, count);
+    numberReturned+=endIndex-startIndex;
+    /**
+     * @numberMatched are the features that match the query.
+     * @note that numberMatched is the number of features that have been returned to server.
+     * If limit=100, then numberMatched=100. Since count<=limit, @numberMatched will be set to @rows.length
+     */
+    //let numberMatched: number;
+    /**
+     * @nextPageOffset is the offset of the next page of features.
+     * 
+     */
     const nextPageOffset: number = offset + limit;
+
+    /**
+     * @prevPageOffset is the offset of the previous page of features.
+     */
     const prevPageOffset: number = offset - limit;
-    const allowedNumMatched: number = count - offset;
-    let numberMatched: number;
-    allowedNumMatched < 0 ? numberMatched = 0 : numberMatched = allowedNumMatched;
-    return { nextPageOffset, prevPageOffset, numberMatched }
+
+    /**
+     * 
+     */
+    return { nextPageOffset, prevPageOffset, numberReturned }
 }

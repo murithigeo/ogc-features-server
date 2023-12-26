@@ -907,9 +907,9 @@ components:
       required: false
       schema:
         type: integer
-        minimum: 10
-        maximum: 500
-        default: 100
+        minimum: 5
+        maximum: 100
+        default: 10
       style: form
       explode: false
     offset:

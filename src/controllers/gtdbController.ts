@@ -1,5 +1,5 @@
 import * as sequelize from 'sequelize';
-import * as models from '../models';
+import models from '../models';
 const { Op } = sequelize;
 const Gtdb = models.gtdb;
 import { validateQueryParams } from './core/validParamsFun';
@@ -51,7 +51,7 @@ exports.getAllEvents = async function getAllEvents(context) {
             context.res.status(400).setBody('Invalid CRS');
         } else {
             try {
-                                const { count, rows } = await Gtdb.findAndCountAll({
+                const { count, rows } = await Gtdb.findAndCountAll({
                     attributes: await customColumnDetails(crsCheck, flipCoords),
                     where: {
                         [Op.and]: {
@@ -72,8 +72,8 @@ exports.getAllEvents = async function getAllEvents(context) {
                     offset: offset,
                     raw: true
                 });
-                const { numberMatched, nextPageOffset, prevPageOffset } = await pagingDef(count, offset, limit);
-                const links = await createLinks4FeatureCollection('gtdb', context, offset, numberMatched, prevPageOffset, nextPageOffset);
+                const { nextPageOffset, prevPageOffset,numberReturned } = await pagingDef(count, offset, limit);
+                const links = await createLinks4FeatureCollection('gtdb', context, offset, offset-limit, prevPageOffset, nextPageOffset);
                 async function makeGeoJSON() {
                     let featuresArray: Array<any> = [];
                     if (rows.length < 1) {
@@ -140,7 +140,7 @@ exports.getAllEvents = async function getAllEvents(context) {
                         }
 
                     }
-                    const featurecollection = await createFeatureCollection(count, rows.length, featuresArray, links);
+                    const featurecollection = await createFeatureCollection(numberReturned, featuresArray, links,count);
                     context.res
                         .status(200)
                         .set('content-crs', contentCrs)

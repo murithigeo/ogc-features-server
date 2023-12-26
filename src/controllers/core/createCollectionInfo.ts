@@ -1,5 +1,5 @@
-import { storageCrsCoordinateEpoch,storageCRS,trs, supportedCRS} from "./coreVars";
-import db = require("../../models");
+import { storageCrsCoordinateEpoch, storageCRS, trs, supportedCRS } from "./coreVars";
+import  db from "../../models";
 const { QueryTypes } = require("sequelize");
 import { createLinks4Collections } from "./createLinks";
 
@@ -49,19 +49,19 @@ export async function generateCollectionInfo(
     }
     const links = await createLinks4Collections(collectionId);
     //let supportedCRS: Array<string> = [];
-/*
-    async function genCRSArray() {
-        if (listAllCRS == true) {
-            return supportedCRS;
-        } else {
-            return [
-                '#/crs',
-                storageCRS]
+    /*
+        async function genCRSArray() {
+            if (listAllCRS == true) {
+                return supportedCRS;
+            } else {
+                return [
+                    '#/crs',
+                    storageCRS]
+            }
         }
-    }
-    //genCRSArray();
-    //const crs = await genCRSArray(); //Supported CRS
-    */
+        //genCRSArray();
+        //const crs = await genCRSArray(); //Supported CRS
+        */
     const metadata = {
         id: collectionId,
         title: `Collection ${collectionId}`,
