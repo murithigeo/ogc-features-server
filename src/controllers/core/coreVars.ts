@@ -1,12 +1,6 @@
-import { createServerLinks } from "../../core/serverlinking";
-
+import { CRSnProps } from "./CRS";
 //Supported CRS which should appear in the crs key of the /collections request
-export const supportedCRS: Array<string> = [
-    "http://www.opengis.net/def/crs/OGC/1.3/CRS84",
-    "http://www.opengis.net/def/crs/EPSG/0/4326",
-    'http://www.opengis.net/def/crs/EPSG/0/3395',
-    'http://www.opengis.net/def/crs/EPSG/0/3857'
-];
+export const supportedCRS: Array<string> = CRSnProps.map(obj => obj.crs);
 
 export const storageCRS: string = supportedCRS[0];
 

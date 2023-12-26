@@ -6,7 +6,6 @@ import * as http from "http";
 import * as exegesisExpress from "exegesis-express";
 import * as fs from 'fs';
 import * as morgan from "morgan";
-import exegesisRolesPlugin from 'exegesis-plugin-roles';
 
 import { updateSpecDoc } from "./core/apidefUpdate";
 
@@ -14,13 +13,9 @@ async function createServer() {
     const options = {
         controllers: path.resolve(__dirname, './controllers'),
         controllersPattern: "**/*.@(ts|js)",
-        ignoreServers: false,
-        plugins:[
-            exegesisRolesPlugin({
-                allowedRoles: ['demoUser','verUser','admin']
-            })
-        ]
+        ignoreServers: false
     };
+
     const exegesisMiddleware = await exegesisExpress.middleware(
         path.resolve(__dirname, './openapi.yaml'),
         options

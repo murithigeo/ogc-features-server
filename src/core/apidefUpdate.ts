@@ -8,7 +8,6 @@ import * as jsYAML from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createServerLinks } from './serverlinking';
-const {supportedCRS} = require('../controllers/core/coreVars');
 
 export async function updateSpecDoc() {
     const { baseURL } = await createServerLinks();

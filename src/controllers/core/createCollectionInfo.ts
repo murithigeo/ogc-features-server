@@ -1,5 +1,5 @@
 import { storageCrsCoordinateEpoch, storageCRS, trs, supportedCRS } from "./coreVars";
-import  db from "../../models";
+import db from "../../models";
 const { QueryTypes } = require("sequelize");
 import { createLinks4Collections } from "./createLinks";
 
@@ -77,7 +77,7 @@ export async function generateCollectionInfo(
             }
         },
         itemType: "feature",
-        crs: supportedCRS,
+        crs: listAllCRS == true ? supportedCRS : ['#/crs', storageCRS],
         storageCrs: storageCRS, //CRS84
         storageCrsCoordinateEpoch: storageCrsCoordinateEpoch,
         links: links

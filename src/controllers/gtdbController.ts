@@ -6,6 +6,7 @@ import { validateQueryParams } from './core/validParamsFun';
 import { createLinks4Feature, createLinks4FeatureCollection } from './core/createLinks';
 import { createFeatureCollection } from './core/createFeatureCollection';
 import { defCommonQueryParams, pagingDef } from './core/commonParams';
+import { SupportedContentTypes, contentNegotiationVals } from './core/coreVars';
 
 async function customColumnDetails(crsCheck: Array<any>, flipCoords: boolean) {
     const transformQuery = flipCoords === false ?
@@ -141,14 +142,18 @@ exports.getAllEvents = async function getAllEvents(context) {
 
                     }
                     const featurecollection = await createFeatureCollection(numberReturned, featuresArray, links,count);
+                    //decouple makegeoJson from context
+                    return featurecollection;
+                }
+                if (context.params.query.f==='json'||context.params.query.f===undefined){
                     context.res
                         .status(200)
                         .set('content-crs', contentCrs)
                         .set('content-type', 'application/geo+json')
                         .set('content-type', 'application/json')
-                        .setBody(featurecollection);
+                        .setBody(await makeGeoJSON());
                 }
-                await makeGeoJSON();
+                //await makeGeoJSON();
             } catch (err) {
                 console.log(err);
                 context.res.status(500);
