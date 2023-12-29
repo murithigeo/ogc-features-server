@@ -1,12 +1,12 @@
 import * as sequelize from 'sequelize';
-import models from '../models';
+import models from '../../models';
 const { Op } = sequelize;
 const Gtdb = models.gtdb;
-import { validateQueryParams } from './core/validParamsFun';
-import { createLinks4Feature, createLinks4FeatureCollection } from './core/createLinks';
-import { createFeatureCollection } from './core/createFeatureCollection';
-import { defCommonQueryParams, pagingDef } from './core/commonParams';
-import { SupportedContentTypes, contentNegotiationVals } from './core/coreVars';
+import { validateQueryParams } from '../common/core/validateParams';
+import createFeatureCollection from '../common/featurecollection/index';
+import { links4featureCollection, links4feature } from '../common/links';
+import getCoreParams, { featurecollNumValues } from '../common/params';
+
 
 async function customColumnDetails(crsCheck: Array<any>, flipCoords: boolean) {
     const transformQuery = flipCoords === false ?
@@ -37,21 +37,36 @@ exports.getAllEvents = async function getAllEvents(context) {
     if ((await validateQueryParams(context)).length > 0) {
         context.res.status(400);
     } else {
-        const { f,
-            datetime,
-            offset,
-            limit,
-            contentCrs,
-            bbox,
-            radius,
-            bboxCrsCheck, crsCheck,
-            flipCoords,
-        } = await defCommonQueryParams(context, sequelize, 'gtdb');
-
+        const { contentCrs, bboxCrsCheck, crsCheck, flipCoords, limit, offset, datetimeVals, bbox } = await getCoreParams(context);
         if (bboxCrsCheck.length < 1 || crsCheck.length < 1) {
             context.res.status(400).setBody('Invalid CRS');
         } else {
             try {
+                //Query Conditions
+                const bboxQuery = bboxCrsCheck.length < 1 ? undefined : context.params.query.bbox ? {
+                    //bbox: ORM.literal(`ST_Contains(ST_Transform(ST_MakeEnvelope(${bboxParams.join(',')},${bboxCrsCheck[0].srid}),4326),"gtdb"."geom") is true`)
+                    bbox: sequelize.literal(`ST_Intersects("gtdb"."geom",ST_Transform(ST_MakeEnvelope(${bbox.join(',')},${bboxCrsCheck[0].srid}),4326))`)
+                } : undefined;
+
+                const datetime = context.params.query.datetime ?
+                    datetimeVals.startDate !== undefined && datetimeVals.endDate !== undefined ?
+                        {
+                            dateoccurence: {
+                                [Op.between]: [
+                                    datetimeVals.startDate, datetimeVals.endDate
+                                ]
+                            }
+                        } : datetimeVals.endDate !== undefined && datetimeVals.startDate === undefined ? {
+                            dateoccurence: {
+                                [Op.lte]: datetimeVals.endDate
+                            }
+                        } : datetimeVals.startDate !== undefined && datetimeVals.endDate === undefined ?
+                            {
+                                dateoccurence: {
+                                    [Op.gte]: datetimeVals.startDate
+                                }
+                            } : { dateoccurence: datetimeVals.date } : undefined;
+
                 const { count, rows } = await Gtdb.findAndCountAll({
                     attributes: await customColumnDetails(crsCheck, flipCoords),
                     where: {
@@ -60,9 +75,9 @@ exports.getAllEvents = async function getAllEvents(context) {
                                 [Op.ne]: null
                             },
                             [Op.and]: [
-                                bbox,
-                                datetime,
-                                radius
+                                bboxQuery,
+                                datetime
+
                             ]
                         }
                     },
@@ -73,8 +88,8 @@ exports.getAllEvents = async function getAllEvents(context) {
                     offset: offset,
                     raw: true
                 });
-                const { nextPageOffset, prevPageOffset,numberReturned } = await pagingDef(count, offset, limit);
-                const links = await createLinks4FeatureCollection('gtdb', context, offset, offset-limit, prevPageOffset, nextPageOffset);
+                const { nextPageOffset, prevPageOffset, numberReturned } = await featurecollNumValues(count, offset, limit);
+                const links = await links4featureCollection('gtdb', context, offset, count - offset, prevPageOffset, nextPageOffset);
                 async function makeGeoJSON() {
                     let featuresArray: Array<any> = [];
                     if (rows.length < 1) {
@@ -141,17 +156,21 @@ exports.getAllEvents = async function getAllEvents(context) {
                         }
 
                     }
-                    const featurecollection = await createFeatureCollection(numberReturned, featuresArray, links,count);
+                    const featurecollection = await createFeatureCollection(numberReturned, featuresArray, links, count);
                     //decouple makegeoJson from context
                     return featurecollection;
                 }
-                if (context.params.query.f==='json'||context.params.query.f===undefined){
+                if (context.params.query.f === 'json' || context.params.query.f === undefined) {
                     context.res
                         .status(200)
                         .set('content-crs', contentCrs)
                         .set('content-type', 'application/geo+json')
                         .set('content-type', 'application/json')
                         .setBody(await makeGeoJSON());
+                }
+                else if (context.params.query.f === 'html') {
+                    const featurecollection = await makeGeoJSON();
+
                 }
                 //await makeGeoJSON();
             } catch (err) {
@@ -165,7 +184,7 @@ exports.getOneEvent = async function getOneEvent(context) {
     if ((await validateQueryParams(context)).length > 0) {
         context.res.status(400)
     } else {
-        const { f, crs, contentCrs, crsCheck, flipCoords } = await defCommonQueryParams(context, sequelize, 'gtdb');
+        const { crsCheck, flipCoords, contentCrs } = await getCoreParams(context);
         if (crsCheck.length < 1) {
             context.res.status(400).setBody('Invalid CRS');
         } else {
@@ -199,7 +218,7 @@ exports.getOneEvent = async function getOneEvent(context) {
                                 adm4: rows.adm4,
                                 adm5: rows.adm5
                             },
-                            links: await createLinks4Feature('gtdb', rows.eventid, context)
+                            links: await links4feature('gtdb', rows.eventid, context)
                         };
                         context.res
                             .status(200)
@@ -220,7 +239,7 @@ exports.getOneEvent = async function getOneEvent(context) {
 
 
 export async function exportEvents(context) {
-    const { crsCheck, flipCoords } = await defCommonQueryParams(context, 'null', 'gtdb',)
+    const { crsCheck, flipCoords } = await getCoreParams(context);
     const rows = await Gtdb.findAll({
         attributes: await customColumnDetails(crsCheck, flipCoords),
         where: {

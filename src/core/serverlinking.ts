@@ -1,6 +1,6 @@
 import { getIPAddress } from "./networking";
 
-export async function createServerLinks() {
+export default async function createServerLinks() {
     const locationText: string = "";
     let addPort: string;
     //let baseURL: string;

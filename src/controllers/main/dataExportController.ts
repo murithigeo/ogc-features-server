@@ -1,22 +1,19 @@
-import { defCommonQueryParams } from "./core/commonParams";
-import { validateQueryParams } from "./core/validParamsFun";
-//import * as ogr2ogr from 'ogr2ogr'.default;
+import { validateQueryParams } from "../common/core/validateParams";
+import getCoreParams from "../common/params";
 import { exportEvents } from "./gtdbController";
-//import * as gdal from 'gdal-async';
-//const { GeoJSONToGeoPackage } = require('@ngageoint/geopackage-geojson-js');
-import * as fs from 'fs';
 
 exports.downloadDataset = async function downloadDataset(context) {
     if ((await validateQueryParams(context)).length > 0) {
         context.res.status(400).JSON({ message: "Invalid query parameters" });
     } else {
-        const { crs } = await defCommonQueryParams(context, null, 'gtdb');
+
         const collectionId = context.params.path.collectionId;
         switch (collectionId) {
             case 'gtdb':
+                const crs = await getCoreParams(context);
                 const featurecollection = await exportEvents(crs);
                 //fs.writeFileSync('./gtdb.json',JSON.stringify(featurecollection),'utf8');
-                
+
                 /*
                                 for (let i=0;i<featurecollection.layers.count();i++){
                                     const layer

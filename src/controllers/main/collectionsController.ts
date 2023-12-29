@@ -1,16 +1,9 @@
-import { QueryTypes } from "sequelize";
-import * as db from "../models";
+import { validateQueryParams } from "../common/core/validateParams";
+import {  supportedCRS } from "../common/core/global.variables";
 
-//import the baseURL
-import { validateQueryParams } from "./core/validParamsFun";
-import { createLinks4Collections, createLinks4CollectionDoc } from "./core/createLinks";
-
-import { storageCRS, trs, storageCrsCoordinateEpoch, supportedCRS } from "./core/coreVars";
-
-//import { getCRSArray } from "./core/CRS";
-import { generateCollectionInfo } from "./core/createCollectionInfo";
-
-exports.getAllCollections = async function getAllCollections(context) {
+import { generateCollectionInfo } from "../common/collections/createCollectionInfo";
+import { links4MainColl } from "../common/links";
+export  async function getAllCollections(context) {
     const unexpectedParams = await validateQueryParams(context);
     if (unexpectedParams.length > 0) {
         context.res.status(400)
@@ -24,7 +17,7 @@ exports.getAllCollections = async function getAllCollections(context) {
 
         const collections = {
             title: "Available datasets",
-            links: await createLinks4CollectionDoc(),
+            links: await links4MainColl(context),
             collections: [
                 gtdbMetadata
                 //incidentsMetadata,

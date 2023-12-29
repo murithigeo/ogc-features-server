@@ -1,17 +1,21 @@
 import { getIPAddress } from "./core/networking";
-import { createServerLinks } from "./core/serverlinking";
+import  createServerLinks from "./core/serverlinking";
 import * as express from "express";
+import  next from "next";
 import * as path from "path";
 import * as http from "http";
 import * as exegesisExpress from "exegesis-express";
 import * as fs from 'fs';
 import * as morgan from "morgan";
+//const dev = process.env.NODE_ENV !== 'production';
 
+//const nextApp = next({ dev });
+ 
 import { updateSpecDoc } from "./core/apidefUpdate";
 
 async function createServer() {
     const options = {
-        controllers: path.resolve(__dirname, './controllers'),
+        controllers: path.resolve(__dirname, './controllers/main'),
         controllersPattern: "**/*.@(ts|js)",
         ignoreServers: false
     };
@@ -21,6 +25,7 @@ async function createServer() {
         options
     );
     const app = express();
+  //  await nextApp.prepare();
     const accessLogStream = fs.createWriteStream(
         path.join(__dirname, "./logs/reqs.log"),
         { flags: "a" }

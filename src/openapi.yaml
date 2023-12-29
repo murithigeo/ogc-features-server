@@ -1194,5 +1194,5 @@ components:
                 enum:
                   - The server is currently unable to handle the request.
 servers:
-  - url: http://192.168.5.59
+  - url: http://192.168.52.59
     description: If 1**.***.***.*** is not working, then it is localhost

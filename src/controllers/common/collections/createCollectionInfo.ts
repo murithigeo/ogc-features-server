@@ -1,7 +1,7 @@
-import { storageCrsCoordinateEpoch, storageCRS, trs, supportedCRS } from "./coreVars";
-import db from "../../models";
+import { storageCrsCoordinateEpoch, storageCRS, trs, supportedCRS } from "../core/global.variables";
+import db from "../../../models";
+import { links4collections } from "../links";
 const { QueryTypes } = require("sequelize");
-import { createLinks4Collections } from "./createLinks";
 
 export async function genbboxArray(bbox: Array<any>) {
     const bboxMinx: number = bbox[0]["bbox"]["coordinates"][0][0][0];
@@ -24,7 +24,7 @@ export async function generateCollectionInfo(
     listAllCRS: boolean,
     //trs: string,
     //storageCrsCoordinateEpoch: number,
-    obj: any
+    context: any
 ) {
     let dateTimeMin: any,
         dateTimeMax: any,
@@ -34,20 +34,19 @@ export async function generateCollectionInfo(
         extent: Array<any>,
         intervalArray: Array<any>;
 
-    if (collectionId === 'incidents' || collectionId === 'gtdb') {
-        bbox = await db.sequelize.query(`select st_setsrid(st_extent(geom),4326) as bbox from ${collectionId}`, { type: QueryTypes.SELECT });
-        bboxArray = await genbboxArray(bbox);
-        extent = [bboxArray];
+    bbox = await db.sequelize.query(`select st_setsrid(st_extent(geom),4326) as bbox from ${collectionId}`, { type: QueryTypes.SELECT });
+    bboxArray = await genbboxArray(bbox);
+    extent = [bboxArray];
 
-        datetimeColumn = 'dateoccurence';
-        dateTimeMin = await db.sequelize.query(`select MIN(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
-        dateTimeMax = await db.sequelize.query(`select MAX(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
+    datetimeColumn = 'dateoccurence';
+    dateTimeMin = await db.sequelize.query(`select MIN(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
+    dateTimeMax = await db.sequelize.query(`select MAX(${datetimeColumn}) from ${collectionId}`, { type: QueryTypes.SELECT });
 
-        const dates0 = await genDates4Interval(dateTimeMin, dateTimeMax);
+    const dates0 = await genDates4Interval(dateTimeMin, dateTimeMax);
 
-        intervalArray = [dates0];
-    }
-    const links = await createLinks4Collections(collectionId);
+    intervalArray = [dates0];
+    
+    const links = await links4collections('gtgb', context);
     //let supportedCRS: Array<string> = [];
     /*
         async function genCRSArray() {

@@ -1,3 +1,4 @@
+/*
 import { verify_use_CRS } from "./CRS";
 import * as proj4 from 'proj4';
 const { QueryTypes } = require('sequelize');
@@ -15,43 +16,99 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
      */
     //const f: string = obj.params.query.f === undefined ? 'json' : obj.params.query.f;
 
+    //f can be json or html at this time
+    let f0: string, //self
+        f1: string, //alternate 1
+        f2: string, //alternate 2
+        f3: string; //alternate 3
+        /*
+    let f_Values_Types: Array<any> = [
+        {
+            self: undefined,
+            type: undefined,
+            title: undefined
+        },
+        {
+            alternate: undefined,
+            type: undefined,
+            title: undefined
+        },
+        {
+            alternate: undefined,
+            type: undefined,
+            title: undefined
+        }
+    ]
+    obj.params.query.f == undefined || obj.params.query.f === 'json' ? f_Values_Types = [
+        {
+            self: 'json',
+            type: 'application/geo+json',
+            title: `This document as geoJSON`
+        },
+        {
+            alternate: 'html',
+            type: 'text/html',
+            title: `This document as HTML`
+        },
+        {
+            self: 'json',
+            type: 'application/json',
+            title: `This document as JSON`
+        }
+    ] : f_Values_Types = [
+        {
+            self: 'html',
+            type: 'text/html',
+            title: `This document as HTML`
+        },
+        {
+            alternate: 'json',
+            type: 'application/geo+json',
+            title: `This document as geoJSON`
+        },
+        {
+            alternate: 'json',
+            type: 'application/json'
+        }
+    ];
+    */
     //since exegesis will set json as default, validating f is not necessary
-    const f: string = obj.params.query.f;
-
+    //f = obj.params.query.f;
+/*
     /**
      * @param offset
      * @default offset=0 Is same as no offset
      * @override with specifying offset for paging
      */
-
+/*
     const offset: number = obj.params.query.offset === undefined || obj.params.query.offset < 0 ? 0 : obj.params.query.offset;
-
+*/
+/*
     /**
      * @param limit
      * @default 100. Must match OAS3 spec paramSchema
      * @returns limit
      */
     //    const limit: number = obj.params.query.limit === undefined ? 100 : obj.params.query.limit;
+    /*
     const limit: number = obj.params.query.limit;
+    
     /**
      * @description Defines the crs of the supplied bbox. Since the storageCrs is ${storageCrs[0]}, the default bbox-crs is assumed to be storageCrs[1]. Otherwise, overriden by client
      * @['bbox-crs'] 
      * @default storageCRS[1]
      */
-    const bboxCrs = obj.params.query['bbox-crs'] === undefined ? supportedCRS[0] : obj.params.query['bbox-crs'];
 
     /**
      * @crs determines outputCrs of features requested.
      * @default is "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
      */
-    const crs = obj.params.query.crs === undefined ? supportedCRS[0] : obj.params.query.crs;
 
     /**
      * @default is <${storageCRS[0]}>
      * @contentCrs is the header value of returned dataset
      */
-    const contentCrs = obj.params.query.crs === undefined ? `<${supportedCRS[0]}>` : `<${obj.params.query.crs}>`
-
+/*
     //const datetime =
     let exceedsExtent: boolean;
     async function validatebbox(minx: any, miny: number, maxx: number, maxy: number) {
@@ -101,9 +158,6 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
     /**
      * @radius return features a certain radiusDistance away from [x,y].
      */
-    const radius = obj.params.query.radius ? {
-        radius: ORM.literal(`ST_DistanceSPhere(geom,(ST_Transform(ST_SetSRID(ST_MakePoint(:lon,:lat),:bboxSRID),4326))) <= radiusDistance`)
-    } : undefined;
 
     /**
      * @link https://github.com/opengeospatial/ets-ogcapi-features10/issues/233#issuecomment-1867426037
@@ -130,7 +184,7 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
      * This frees up checking for srid from database meaning even CRS84 can return a distinct signature
      */
 
-
+/*
     const crsCheck: Array<any> = await verify_use_CRS(crs);
     const bboxCrsCheck: Array<any> = await verify_use_CRS(bboxCrs);
     //let isGeographic: boolean;
@@ -167,7 +221,8 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
         endDate: undefined,
         date: undefined
     };
-
+*/
+/*
     async function processDatetime(datetime: string) {
 
         // Decode the URL-encoded datetime string
@@ -210,6 +265,7 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
             dateoccurence: context.params.query.datetime.split('/')[0]
         } : undefined;
     */
+   /*
     const datetime = obj.params.query.datetime ?
         dateObject.startDate !== undefined && dateObject.endDate !== undefined ?
             {
@@ -230,7 +286,7 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
                 } : { dateoccurence: dateObject.date } : undefined;
 
     return {
-        f,
+        f_Values_Types,
         offset,
         limit,
         bboxCrs,
@@ -248,36 +304,30 @@ export async function defCommonQueryParams(obj: any, ORM: any, collectionId: str
         //  linksFC
     };
 }
-
+*/
+/*
 export async function pagingDef(count: number, offset: number, limit: number) {
     /**
      * @numberReturned is the total number of features returned to
      * server. Eg. if limit=10 and offset0=0, offset1=10, then numberReturned=20
      */
+    /*
     let numberReturned: number = 0;
     //numberReturned += limit//Math.min(limit, count - offset);
-    const startIndex=Math.min(offset, count);
-    const endIndex=Math.min(startIndex+limit, count);
-    numberReturned+=endIndex-startIndex;
+    const startIndex = Math.min(offset, count);
+    const endIndex = Math.min(startIndex + limit, count);
+    numberReturned += endIndex - startIndex;
+    */
     /**
      * @numberMatched are the features that match the query.
      * @note that numberMatched is the number of features that have been returned to server.
      * If limit=100, then numberMatched=100. Since count<=limit, @numberMatched will be set to @rows.length
-     */
-    //let numberMatched: number;
-    /**
-     * @nextPageOffset is the offset of the next page of features.
-     * 
-     */
+
     const nextPageOffset: number = offset + limit;
 
-    /**
-     * @prevPageOffset is the offset of the previous page of features.
-     */
+
     const prevPageOffset: number = offset - limit;
 
-    /**
-     * 
-     */
     return { nextPageOffset, prevPageOffset, numberReturned }
 }
+*/

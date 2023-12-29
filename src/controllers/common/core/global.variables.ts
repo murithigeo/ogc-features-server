@@ -1,4 +1,4 @@
-import { CRSnProps } from "./CRS";
+import { CRSnProps } from "./CRSnProperties";
 //Supported CRS which should appear in the crs key of the /collections request
 export const supportedCRS: Array<string> = CRSnProps.map(obj => obj.crs);
 
@@ -12,16 +12,3 @@ const PG34rdate: string = "2023-08-23";
 const rdate = new Date(PG34rdate);
 
 export const storageCrsCoordinateEpoch: number = parseFloat((rdate.getFullYear() + ((rdate.getMonth() + 1) - 1) / 12 + (rdate.getDate() - 1) / 365.25).toFixed(2));
-
-export const SupportedContentTypes: Array<string> = [
-    'application/json',
-    'application/geo+json',
-    'text/html',
-    'application/vnd.oai.openapi+json;version=3.0'
-];
-
-
-export const contentNegotiationVals: Array<string> = [
-    'json',
-    'html'
-];

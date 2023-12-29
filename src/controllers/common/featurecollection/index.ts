@@ -1,5 +1,5 @@
 
-export async function createFeatureCollection( //minus offset
+export default async function createFeatureCollection( //minus offset
      numberReturned: number,
      featuresArray:Array<object>,
      links:Array<object>,

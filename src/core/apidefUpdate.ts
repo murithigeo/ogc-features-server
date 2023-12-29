@@ -7,7 +7,7 @@
 import * as jsYAML from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
-import { createServerLinks } from './serverlinking';
+import  createServerLinks  from './serverlinking';
 
 export async function updateSpecDoc() {
     const { baseURL } = await createServerLinks();

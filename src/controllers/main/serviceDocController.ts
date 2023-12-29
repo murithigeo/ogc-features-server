@@ -1,4 +1,4 @@
-import { createServerLinks } from '../core/serverlinking';
+import createServerLinks  from '../../core/serverlinking';
 exports.getServiceDoc = async function getServiceDoc(context) {
     const { baseURL } = await createServerLinks();
 
