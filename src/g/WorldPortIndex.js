@@ -1,0 +1,68 @@
+/*
+const { DataTypes } = require("sequelize");
+
+module.exports = (sequelize) => {
+    const WorldPortIndex = sequelize.define('wpi', {
+        Oid: DataTypes.INTEGER,
+        wpiNo: {
+            type: DataTypes.INTEGER,
+            primaryKey: true
+        },
+        regionname: DataTypes.STRING,
+        mainport: DataTypes.STRING,
+        altport: DataTypes.STRING,
+        un_ocoCode: DataTypes.STRING,
+        countrycode: DataTypes.STRING,
+        worldwaterbody: DataTypes.STRING,
+        countrycode: DataTypes.STRING,
+        iho_s130_sea_area: DataTypes.STRING,
+        saildir_pub: {
+            type: DataTypes.STRING,
+        },
+        saildir_pub_url:{
+            type: DataTypes.STRING,
+            isURI: true
+        },
+        standnatchart: DataTypes.INTEGER,
+        iho_s57_enc: DataTypes.STRING,
+        iho_s101_enc: DataTypes.STRING,
+        dnc: DataTypes.STRING,
+        tidalrange: DataTypes.NUMBER,
+        entrancewidth: DataTypes.NUMBER,
+        channeldepth: DataTypes.NUMBER,
+        anchoragedepth: DataTypes.NUMBER,
+        cargopierdepth: DataTypes.NUMBER,
+        oilterminaldepth: DataTypes.NUMBER,
+        lngterminaldepth: DataTypes.NUMBER,
+        maxvessellength:DataTypes.NUMBER,
+        maxvesselbeam:DataTypes.NUMBER,
+        maxvesseldraft:DataTypes.NUMBER,
+        offshoremaxvessellength:DataTypes.NUMBER,
+        offshoremaxvesselbeam: DataTypes.NUMBER,
+        harborsize: DataTypes.STRING,
+        harbortype: DataTypes.STRING,
+        harboruse: DataTypes.STRING,
+        shelterafforded:DataTypes.STRING,
+        entrancerest_tide: DataTypes.STRING,
+        entrancerest_heavyswell: DataTypes.STRING,
+        entrancerest_ice:DataTypes.STRING,
+        entrancerest_other: DataTypes.STRING,
+        overheadlimits: DataTypes.STRING,
+        underkeel_cms: DataTypes.STRING,
+        goodholdingground: DataTypes.STRING,
+        turningarea: DataTypes.STRING,
+        portsecurity: DataTypes.STRING,
+        eta_message:DataTypes.STRING,
+        quarantine_pratique:DataTypes.STRING,
+        quarantine_sanitation: DataTypes.STRING,
+        quarantine_other: DataTypes.STRING,
+        traffic_sep_scheme: DataTypes.STRING,
+        vesseltrafficscheme: DataTypes.STRING,
+        firstportentry: DataTypes.STRING,
+        usrep: DataTypes.STRING,
+        pilotage_compulsory: DataTypes.STRING,
+        pilotage_available: DataTypes.STRING,
+        
+    })
+}
+*/

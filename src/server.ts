@@ -1,7 +1,6 @@
-import { getIPAddress } from "./core/networking";
-import  createServerLinks from "./core/serverlinking";
+import { getIPAddress,createServerLinks,updateSpecDoc } from "./etc";
 import * as express from "express";
-import  next from "next";
+//import  next from "next";
 import * as path from "path";
 import * as http from "http";
 import * as exegesisExpress from "exegesis-express";
@@ -10,12 +9,10 @@ import * as morgan from "morgan";
 //const dev = process.env.NODE_ENV !== 'production';
 
 //const nextApp = next({ dev });
- 
-import { updateSpecDoc } from "./core/apidefUpdate";
 
 async function createServer() {
     const options = {
-        controllers: path.resolve(__dirname, './controllers/main'),
+        controllers: path.resolve(__dirname, './lib/controllers'),
         controllersPattern: "**/*.@(ts|js)",
         ignoreServers: false
     };
@@ -44,7 +41,7 @@ async function createServer() {
 
 async function initServer() {
     const { server0, PORT } = await getIPAddress(); //Get the ServerIP and PORT params
-    const { baseURL } = await createServerLinks(); //Get the formed serverUrl
+    const  baseURL  = await createServerLinks(); //Get the formed serverUrl
     await updateSpecDoc(); //
     createServer()
         .then(

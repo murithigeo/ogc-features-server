@@ -33,12 +33,9 @@
         
 ## Current Implementation Details
 ### [OGC API - Features - Part 1](https://docs.ogc.org/DRAFTS/17-069r5.html). As of 21/12/2023
-  `Tests Passed`: 89
-  `Tests Failed`: 9
-  `Tests Skipped`: 2
+  `All Passing`
 ### [OGC API - Features - Part 2: Coordinate Reference Systems by Reference](https://docs.ogc.org/is/17-069r4/17-069r4.html)
-  `Tests Passed`: 41
-  `Tests Failed`: 2
+  `All Passing`
 ## Current Limitations of project
   1. Rigid Data Structures. Sequelize requires models which closely adhere to structure of database records/data columns. If alternative exists with no function lost such as spatial querying, let me know.
   2. Current supported `CRS` are those enumerated by a reference OGC implementation [idproxy](https://demo.ldproxy.net/) or the official OGC documents.
