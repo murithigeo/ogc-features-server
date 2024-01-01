@@ -1,7 +1,8 @@
 import { validateQueryParams } from "../config/common/validateParams";
+import { render$WorldPortIndexItems, render$landingPage } from "../config/html";
 import { links4landingPage } from "../config/links";
 
-//import { createLandingPage } from "./html/index";
+import  * as ReactDOMServer  from "react-dom/server";
 
 exports.getLandingPage = async function getLandingPage(context) {
     const unexpectedParams = await validateQueryParams(context);
@@ -19,11 +20,12 @@ exports.getLandingPage = async function getLandingPage(context) {
                 .set('content-type', 'application/json')
                 .setBody(landingPage);
         } else if (context.params.query.f == 'html') {
-            console.log(landingPage);
+             //const html= await render();
+             const html=await render$landingPage(landingPage.links);
             context.res
                 .status(200)
                 .set('content-type', 'text/html')
-                .setBody({ message: `Supposed to be a html page` });
+                .setBody(html);
 
         }
     }

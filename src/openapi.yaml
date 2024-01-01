@@ -236,6 +236,24 @@ paths:
                         type: string
         '400':
           $ref: '#/components/responses/Error400BadRequest'
+  /styles/{filename}:
+    x-exegesis-controller: cssController
+    description: Serves Css for the `html` response pages
+    get:
+      x-exegesis-operationId: getcss
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful.
+          content:
+            text/css:
+              schema:
+                type: string
 components:
   schemas:
     GeoJsonObject:

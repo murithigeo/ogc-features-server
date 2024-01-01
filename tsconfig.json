@@ -6,12 +6,32 @@
         "allowJs": true,
         "target": "ES6",
         "pretty": true,
+        "baseUrl": "./",
+        "paths": {
+            "src/*": [
+                "src/*"
+            ],
+        },
         "outDir": "outDir",
         "module": "CommonJS",
         "types": [
             "node"
         ],
         "typeRoots": [
-            "../node_modules/@types"
+            "./node_modules/@types"
+        ],
+        "plugins": [
+            {
+                "name": "typescript-plugin-css-modules",
+                "options": {
+                    "classnameTransform": "dashes",
+                    "customMatcher": "\\.module\\.css$",
+                    "camelCase": true
+                }
+            }
         ]
-    }}
+    },
+    "include": [
+        "src","src/lib/config/html/components/styles"
+    ]
+}

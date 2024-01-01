@@ -1,7 +1,7 @@
-import {createServerLinks} from "../../../etc";
+import { createServerLinks } from "../../../etc";
 
 export default async function init4landingpage(context: any) {
-    const  baseURL  = await createServerLinks();
+    const baseURL = await createServerLinks();
     let fKeys = {
         self_F: undefined,
         alt_F: undefined,
@@ -30,28 +30,32 @@ export default async function init4landingpage(context: any) {
         {
             rel: `alternate`,
             href: `${baseURL}/?f=${fKeys.alt_F}`,
-            type:  `${fKeys.alt_type}`
+            type: `${fKeys.alt_type}`,
+            title: `This Document as ${fKeys.alt_F}`
         },
         {
             rel: 'conformance',
             href: `${baseURL}/conformance?f=json`,
-            type: 'application/json'
+            type: 'application/json',
+            title: `Conformance Document as json`
         },
         {
             rel: 'service-desc',
             type: 'application/vnd.oai.openapi+json;version=3.0',
-            href: `${baseURL}/api`
+            href: `${baseURL}/api`,
+            title: 'Capability Statement as OpenAPI 3.0.0 Document'
         },
         {
             rel: 'service-doc',
             type: 'text/html',
-            href: `${baseURL}/api.html`
+            href: `${baseURL}/api.html`,
+            title: `View Capability Statement as HTML Document`
         },
         {
             rel: 'data',
             type: 'application/json',
-            href: `${baseURL}/collections`,
-            title: 'collectionsDocument'
+            href: `${baseURL}/collections?f=json`,
+            title: 'collectionsDocument in json'
         }
     ];
     return links
